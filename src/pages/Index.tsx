@@ -2,6 +2,7 @@
 import { Header } from "@/components/Header";
 import { LocationInput } from "@/components/LocationInput";
 import { RideOptions } from "@/components/RideOptions";
+import { Map } from "@/components/Map";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -13,6 +14,7 @@ const Index = () => {
       <main className="pt-20 px-4 pb-4 max-w-md mx-auto">
         <Card className="glass-card p-6 mb-6 fade-in">
           <div className="space-y-4">
+            <Map />
             <LocationInput
               type="pickup"
               placeholder="Enter pickup location"

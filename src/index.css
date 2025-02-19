@@ -41,6 +41,7 @@
 
 .glass-card {
   @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg;
+  background: linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%);
 }
 
 .slide-up {
@@ -69,4 +70,20 @@
   to {
     opacity: 1;
   }
+}
+
+.bottom-nav {
+  background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -1px 10px rgba(0,0,0,0.1);
+}
+
+.gradient-button {
+  background: linear-gradient(90deg, hsla(221, 45%, 73%, 1) 0%, hsla(220, 78%, 29%, 1) 100%);
+  transition: all 0.3s ease;
+}
+
+.gradient-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }

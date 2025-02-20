@@ -92,6 +92,19 @@ export const Map = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const totalCost = selectedUserIds.length * 0.10;
+
+      // Start a transaction to update wallet and create message
+      const { data: wallet, error: walletError } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (walletError || !wallet || wallet.balance < totalCost) {
+        throw new Error('Insufficient funds');
+      }
+
       // Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
@@ -101,6 +114,25 @@ export const Map = () => {
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
+
+      // Update wallet balance
+      const { error: balanceError } = await supabase
+        .from('wallets')
+        .update({ balance: wallet.balance - totalCost })
+        .eq('user_id', user.id);
+
+      if (balanceError) throw balanceError;
+
+      // Record transaction
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          amount: -totalCost,
+          description: `Sent file to ${selectedUserIds.length} recipients`
+        });
+
+      if (transactionError) throw transactionError;
 
       // Create message records for each selected user
       const messages = selectedUserIds.map(receiverId => ({
@@ -119,7 +151,7 @@ export const Map = () => {
 
       toast({
         title: "Success",
-        description: `File sent to ${selectedUserIds.length} user${selectedUserIds.length > 1 ? 's' : ''}`
+        description: `File sent to ${selectedUserIds.length} user${selectedUserIds.length > 1 ? 's' : ''} for $${totalCost.toFixed(2)}`
       });
 
       setSelectedFile(null);
@@ -132,7 +164,9 @@ export const Map = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send file. Please try again."
+        description: error instanceof Error && error.message === 'Insufficient funds'
+          ? "Insufficient funds. Please add money to your wallet."
+          : "Failed to send file. Please try again."
       });
     }
   };

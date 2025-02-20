@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from './FileUpload';
 import { UserList } from './UserList';
 import { NearbyUser } from './types';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+
+const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 
 interface SendFileDialogProps {
   isOpen: boolean;
@@ -35,11 +39,52 @@ export const SendFileDialog = ({
   onSend,
   fileInputRef,
 }: SendFileDialogProps) => {
+  const [balance, setBalance] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const totalCost = selectedUserIds.length * COST_PER_RECIPIENT;
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: wallet, error } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching wallet:', error);
+        return;
+      }
+
+      setBalance(wallet?.balance || 0);
+    };
+
+    if (isOpen) {
+      fetchBalance();
+    }
+  }, [isOpen]);
+
   const handleClose = () => {
     onOpenChange(false);
     onFileSelect(null);
     onUserSelect([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSend = async () => {
+    if (!balance || balance < totalCost) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient funds",
+        description: `You need $${totalCost.toFixed(2)} to send this file. Please add funds to your wallet.`
+      });
+      return;
+    }
+    onSend();
   };
 
   return (
@@ -49,6 +94,25 @@ export const SendFileDialog = ({
           <DialogTitle>Send File to Multiple Users</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="p-4 bg-muted rounded-lg">
+            <div className="text-sm space-y-2">
+              <div className="flex justify-between">
+                <span>Your balance:</span>
+                <span className="font-medium">${balance?.toFixed(2) || '0.00'}</span>
+              </div>
+              <div className="flex justify-between text-primary">
+                <span>Cost per recipient:</span>
+                <span>${COST_PER_RECIPIENT.toFixed(2)}</span>
+              </div>
+              {selectedUserIds.length > 0 && (
+                <div className="flex justify-between font-medium border-t pt-2 mt-2">
+                  <span>Total cost ({selectedUserIds.length} recipients):</span>
+                  <span>${totalCost.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           <UserList
             users={nearbyUsers}
             selectedUserIds={selectedUserIds}
@@ -69,10 +133,12 @@ export const SendFileDialog = ({
             Cancel
           </Button>
           <Button 
-            onClick={onSend} 
+            onClick={handleSend} 
             disabled={!selectedFile || selectedUserIds.length === 0}
+            className={balance && balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
           >
-            Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''}
+            Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
+            {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}
           </Button>
         </DialogFooter>
       </DialogContent>

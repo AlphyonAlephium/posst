@@ -225,7 +225,7 @@ export const Map = () => {
             clusterRadius: 50
           });
 
-          // Add clusters layer (updated to white)
+          // Add clusters layer
           map.current!.addLayer({
             id: 'clusters',
             type: 'circle',
@@ -236,15 +236,15 @@ export const Map = () => {
               'circle-radius': [
                 'step',
                 ['get', 'point_count'],
-                20, // radius for 1-9 points
-                10, 30, // radius for 10+ points
-                20, 40 // radius for 20+ points
+                20,
+                10, 30,
+                20, 40
               ],
               'circle-opacity': 0.8
             }
           });
 
-          // Add cluster count labels (updated to primary color)
+          // Add cluster count labels with exact color
           map.current!.addLayer({
             id: 'cluster-count',
             type: 'symbol',
@@ -256,11 +256,11 @@ export const Map = () => {
               'text-size': 12
             },
             paint: {
-              'text-color': 'hsl(var(--primary))'
+              'text-color': '#7ed957'
             }
           });
 
-          // Add unclustered point layer (updated to white)
+          // Add unclustered point layer
           map.current!.addLayer({
             id: 'unclustered-point',
             type: 'circle',
@@ -273,7 +273,7 @@ export const Map = () => {
             }
           });
 
-          // Add unclustered point count (updated to primary color)
+          // Add unclustered point count with exact color
           map.current!.addLayer({
             id: 'unclustered-point-count',
             type: 'symbol',
@@ -285,7 +285,7 @@ export const Map = () => {
               'text-size': 12
             },
             paint: {
-              'text-color': 'hsl(var(--primary))'
+              'text-color': '#7ed957'
             }
           });
 

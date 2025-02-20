@@ -297,13 +297,13 @@ export const Map = () => {
             }
           });
 
-          // Handle clicks on clusters
+          // Updated click handler for clusters with proper type casting
           map.current!.on('click', 'clusters', (e) => {
             const features = map.current!.queryRenderedFeatures(e.point, {
               layers: ['clusters']
             });
             const clusterId = features[0].properties.cluster_id;
-            map.current!.getSource('locations').getClusterExpansionZoom(
+            (map.current!.getSource('locations') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
               clusterId,
               (err, zoom) => {
                 if (err) return;

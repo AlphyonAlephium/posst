@@ -1,20 +1,93 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FcGoogle } from 'react-icons/fc';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle authentication here
-    console.log("Auth submitted:", { email, password, isLogin });
+    setLoading(true);
+
+    try {
+      const { data, error } = isLogin
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+      } else {
+        if (isLogin) {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+          navigate("/");
+        } else {
+          if (data.user?.identities?.length === 0) {
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "An account with this email already exists.",
+            });
+          } else {
+            toast({
+              title: "Success!",
+              description: "Please check your email to confirm your account.",
+            });
+          }
+        }
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    }
   };
 
   return (
@@ -35,7 +108,7 @@ export const Auth = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleEmailAuth} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -45,6 +118,7 @@ export const Auth = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div className="space-y-2">
@@ -56,11 +130,16 @@ export const Auth = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
 
-        <Button type="submit" className="w-full gradient-button text-white">
-          {isLogin ? "Sign in" : "Create account"}
+        <Button 
+          type="submit" 
+          className="w-full gradient-button text-white"
+          disabled={loading}
+        >
+          {loading ? "Loading..." : isLogin ? "Sign in" : "Create account"}
         </Button>
 
         <div className="relative my-6">
@@ -78,7 +157,8 @@ export const Auth = () => {
           type="button"
           variant="outline"
           className="w-full"
-          onClick={() => console.log("Google sign in")}
+          onClick={handleGoogleAuth}
+          disabled={loading}
         >
           <FcGoogle className="mr-2 h-5 w-5" />
           Sign in with Google
@@ -89,6 +169,7 @@ export const Auth = () => {
             type="button"
             className="text-sm text-primary hover:underline"
             onClick={() => setIsLogin(!isLogin)}
+            disabled={loading}
           >
             {isLogin
               ? "Don't have an account? Sign up"

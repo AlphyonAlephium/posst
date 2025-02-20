@@ -195,39 +195,36 @@ export const SendFileDialog = ({
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <div className="text-sm space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Your balance:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">${balance.toFixed(2)}</span>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => setIsTopUpOpen(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Top up
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => setIsWithdrawOpen(true)}
-                      >
-                        <MinusCircle className="h-4 w-4 mr-1" />
-                        Withdraw
-                      </Button>
-                    </div>
+              <div className="text-sm space-y-4">
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-medium">Your balance:</span>
+                    <span className="text-lg font-bold">${balance.toFixed(2)}</span>
+                  </div>
+                  <div className="flex gap-2 w-full">
+                    <Button
+                      className="flex-1 bg-green-500 hover:bg-green-600"
+                      onClick={() => setIsTopUpOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Top up
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
+                      onClick={() => setIsWithdrawOpen(true)}
+                    >
+                      <MinusCircle className="h-4 w-4 mr-2" />
+                      Withdraw
+                    </Button>
                   </div>
                 </div>
-                <div className="flex justify-between text-primary">
+                <div className="flex justify-between text-primary pt-2 border-t">
                   <span>Cost per recipient:</span>
                   <span>${COST_PER_RECIPIENT.toFixed(2)}</span>
                 </div>
                 {selectedUserIds.length > 0 && (
-                  <div className="flex justify-between font-medium border-t pt-2 mt-2">
+                  <div className="flex justify-between font-medium border-t pt-2">
                     <span>Total cost ({selectedUserIds.length} recipients):</span>
                     <span>${totalCost.toFixed(2)}</span>
                   </div>

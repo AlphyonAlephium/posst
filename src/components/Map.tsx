@@ -4,32 +4,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-
-interface Location {
-  latitude: number;
-  longitude: number;
-  user_id: string;
-}
-
-const ALLOWED_FILE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'application/pdf'
-];
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+import { SendFileDialog } from './map/SendFileDialog';
+import { Location, NearbyUser, LATVIA_CENTER } from './map/types';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -39,45 +15,8 @@ export const Map = () => {
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [nearbyUsers, setNearbyUsers] = useState<{ user_id: string }[]>([]);
+  const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const LATVIA_CENTER = {
-    lng: 24.105186,
-    lat: 56.946285,
-    zoom: 7
-  };
-
-  const validateFile = (file: File) => {
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file type",
-        description: "Please upload a JPG, PNG, GIF, or PDF file"
-      });
-      return false;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: "File size must be less than 5MB"
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && validateFile(file)) {
-      setSelectedFile(file);
-    } else {
-      event.target.value = '';
-    }
-  };
 
   const updateLocationSource = async () => {
     if (!map.current) return;
@@ -255,7 +194,7 @@ export const Map = () => {
             }
           });
 
-          // Add cluster count labels with exact color
+          // Add cluster count labels
           map.current!.addLayer({
             id: 'cluster-count',
             type: 'symbol',
@@ -284,7 +223,7 @@ export const Map = () => {
             }
           });
 
-          // Add unclustered point count with exact color
+          // Add unclustered point count
           map.current!.addLayer({
             id: 'unclustered-point-count',
             type: 'symbol',
@@ -308,7 +247,7 @@ export const Map = () => {
             }
           });
 
-          // Updated click handler for clusters with proper type casting
+          // Handle clicks on clusters
           map.current!.on('click', 'clusters', (e) => {
             const features = map.current!.queryRenderedFeatures(e.point, {
               layers: ['clusters']
@@ -385,72 +324,17 @@ export const Map = () => {
         <div ref={mapContainer} className="absolute inset-0" />
       </div>
 
-      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send File to Multiple Users</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select Recipients</Label>
-              <div className="grid gap-2 p-4 border rounded-lg max-h-[150px] overflow-y-auto">
-                {nearbyUsers.map((user) => {
-                  const userId = user.user_id;
-                  return (
-                    <div key={userId} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={userId}
-                        checked={selectedUserIds.includes(userId)}
-                        onCheckedChange={(checked) => {
-                          setSelectedUserIds(prev => 
-                            checked 
-                              ? [...prev, userId]
-                              : prev.filter(id => id !== userId)
-                          );
-                        }}
-                      />
-                      <Label htmlFor={userId}>User {userId.slice(0, 8)}...</Label>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept=".jpg,.jpeg,.png,.gif,.pdf"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
-              <p className="text-sm text-muted-foreground">
-                Accepted formats: JPG, PNG, GIF, PDF (Max 5MB)
-              </p>
-            </div>
-            {selectedFile && (
-              <p className="text-sm text-primary">
-                Selected file: {selectedFile.name}
-              </p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsMessageDialogOpen(false);
-              setSelectedFile(null);
-              setSelectedUserIds([]);
-              if (fileInputRef.current) fileInputRef.current.value = '';
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={!selectedFile || selectedUserIds.length === 0}
-            >
-              Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SendFileDialog
+        isOpen={isMessageDialogOpen}
+        onOpenChange={setIsMessageDialogOpen}
+        nearbyUsers={nearbyUsers}
+        selectedUserIds={selectedUserIds}
+        onUserSelect={setSelectedUserIds}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
+        onSend={handleSendMessage}
+        fileInputRef={fileInputRef}
+      />
     </>
   );
 };

@@ -39,40 +39,25 @@ export const SendFileDialog = ({
   onSend,
   fileInputRef,
 }: SendFileDialogProps) => {
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<number | null>(null);
   const { toast } = useToast();
 
   const totalCost = selectedUserIds.length * COST_PER_RECIPIENT;
 
   useEffect(() => {
     const fetchBalance = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('No user found');
-          return;
-        }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        console.log('Fetching balance for user:', user.id);
-        const { data: wallet, error } = await supabase
-          .from('wallets')
-          .select('balance')
-          .eq('user_id', user.id)
-          .single();
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
 
-        if (error) {
-          console.error('Error fetching wallet:', error);
-          return;
-        }
-
-        if (wallet) {
-          console.log('Wallet data:', wallet);
-          const numericBalance = parseFloat(wallet.balance);
-          console.log('Parsed balance:', numericBalance);
-          setBalance(numericBalance);
-        }
-      } catch (error) {
-        console.error('Error in fetchBalance:', error);
+      if (wallet) {
+        // Ensure balance is treated as a number
+        setBalance(Number(wallet.balance));
       }
     };
 
@@ -89,14 +74,13 @@ export const SendFileDialog = ({
   };
 
   const handleSend = async () => {
-    console.log('Current balance:', balance);
-    console.log('Total cost:', totalCost);
-    
-    if (balance < totalCost) {
+    // Convert balance to number and compare with total cost
+    const currentBalance = Number(balance);
+    if (isNaN(currentBalance) || currentBalance < totalCost) {
       toast({
         variant: "destructive",
         title: "Insufficient funds",
-        description: `You need $${totalCost.toFixed(2)} to send this file. Your current balance is $${balance.toFixed(2)}. Please add funds to your wallet.`
+        description: `You need $${totalCost.toFixed(2)} to send this file. Your current balance is $${currentBalance.toFixed(2)}. Please add funds to your wallet.`
       });
       return;
     }
@@ -114,7 +98,7 @@ export const SendFileDialog = ({
             <div className="text-sm space-y-2">
               <div className="flex justify-between">
                 <span>Your balance:</span>
-                <span className="font-medium">${balance.toFixed(2)}</span>
+                <span className="font-medium">${balance?.toFixed(2) || '0.00'}</span>
               </div>
               <div className="flex justify-between text-primary">
                 <span>Cost per recipient:</span>
@@ -151,7 +135,7 @@ export const SendFileDialog = ({
           <Button 
             onClick={handleSend} 
             disabled={!selectedFile || selectedUserIds.length === 0}
-            className={balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
+            className={Number(balance) < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
           >
             Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
             {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}

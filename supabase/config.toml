@@ -1,1 +1,3 @@
-project_id = "lbfizzuxmnhblksmhwgn"
+
+[functions.get-secret]
+verify_jwt = false

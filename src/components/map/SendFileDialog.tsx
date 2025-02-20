@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -66,6 +67,19 @@ export const SendFileDialog = ({
     }
   }, [isOpen]);
 
+  const handleDistributePayment = async (userId: string) => {
+    const { data: success, error } = await supabase
+      .rpc('distribute_payment', {
+        sender_id: (await supabase.auth.getUser()).data.user?.id,
+        receiver_id: userId,
+        total_amount: COST_PER_RECIPIENT
+      });
+
+    if (error || !success) {
+      throw new Error(error?.message || 'Failed to process payment');
+    }
+  };
+
   const handleClose = () => {
     onOpenChange(false);
     onFileSelect(null);
@@ -85,7 +99,30 @@ export const SendFileDialog = ({
     
     setIsLoading(true);
     try {
+      // Process payment for each recipient
+      for (const userId of selectedUserIds) {
+        await handleDistributePayment(userId);
+      }
       await onSend();
+      
+      // Refresh balance after successful send
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: wallet } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .single();
+
+        if (wallet) {
+          setBalance(Number(wallet.balance));
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `File sent successfully! 50% of the fee will go to recipients.`
+      });
     } catch (error) {
       console.error('Error sending file:', error);
       toast({
@@ -149,6 +186,9 @@ export const SendFileDialog = ({
                 <span>Cost per recipient:</span>
                 <span>${COST_PER_RECIPIENT.toFixed(2)}</span>
               </div>
+              <div className="text-xs text-muted-foreground italic">
+                50% of the fee goes to recipients
+              </div>
               {selectedUserIds.length > 0 && (
                 <div className="flex justify-between font-medium border-t pt-2 mt-2">
                   <span>Total cost ({selectedUserIds.length} recipients):</span>
@@ -184,7 +224,7 @@ export const SendFileDialog = ({
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Sending...
               </>
             ) : (

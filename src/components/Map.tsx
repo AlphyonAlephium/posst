@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -12,6 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface Location {
   latitude: number;
@@ -34,8 +37,9 @@ export const Map = () => {
   const { toast } = useToast();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [nearbyUsers, setNearbyUsers] = useState<{ user_id: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const LATVIA_CENTER = {
@@ -87,22 +91,26 @@ export const Map = () => {
       return;
     }
 
-    if (locations && map.current.getSource('locations')) {
-      const geoJson = {
-        type: 'FeatureCollection',
-        features: locations.map(location => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude]
-          },
-          properties: {
-            user_id: location.user_id
-          }
-        }))
-      };
+    if (locations) {
+      setNearbyUsers(locations.map(loc => ({ user_id: loc.user_id! })));
 
-      (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
+      if (map.current.getSource('locations')) {
+        const geoJson = {
+          type: 'FeatureCollection',
+          features: locations.map(location => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [location.longitude, location.latitude]
+            },
+            properties: {
+              user_id: location.user_id
+            }
+          }))
+        };
+
+        (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
+      }
     }
   };
 
@@ -127,16 +135,16 @@ export const Map = () => {
       return;
     }
 
-    setSelectedUserId(userId);
+    setSelectedUserIds([userId]);
     setIsMessageDialogOpen(true);
   };
 
   const handleSendMessage = async () => {
-    if (!selectedUserId || !selectedFile) {
+    if (selectedUserIds.length === 0 || !selectedFile) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please select a file to send"
+        description: "Please select at least one user and a file to send"
       });
       return;
     }
@@ -145,7 +153,7 @@ export const Map = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upload file to storage in the message_attachments bucket
+      // Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
 
@@ -155,25 +163,28 @@ export const Map = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create message record
+      // Create message records for each selected user
+      const messages = selectedUserIds.map(receiverId => ({
+        sender_id: user.id,
+        receiver_id: receiverId,
+        file_path: filePath,
+        file_name: selectedFile.name,
+        file_type: selectedFile.type
+      }));
+
       const { error: messageError } = await supabase
         .from('messages')
-        .insert({
-          sender_id: user.id,
-          receiver_id: selectedUserId,
-          file_path: filePath,
-          file_name: selectedFile.name,
-          file_type: selectedFile.type
-        });
+        .insert(messages);
 
       if (messageError) throw messageError;
 
       toast({
         title: "Success",
-        description: "File sent successfully"
+        description: `File sent to ${selectedUserIds.length} user${selectedUserIds.length > 1 ? 's' : ''}`
       });
 
       setSelectedFile(null);
+      setSelectedUserIds([]);
       setIsMessageDialogOpen(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
 
@@ -377,9 +388,33 @@ export const Map = () => {
       <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send File</DialogTitle>
+            <DialogTitle>Send File to Multiple Users</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Recipients</Label>
+              <div className="grid gap-2 p-4 border rounded-lg max-h-[150px] overflow-y-auto">
+                {nearbyUsers.map((user) => {
+                  const userId = user.user_id;
+                  return (
+                    <div key={userId} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={userId}
+                        checked={selectedUserIds.includes(userId)}
+                        onCheckedChange={(checked) => {
+                          setSelectedUserIds(prev => 
+                            checked 
+                              ? [...prev, userId]
+                              : prev.filter(id => id !== userId)
+                          );
+                        }}
+                      />
+                      <Label htmlFor={userId}>User {userId.slice(0, 8)}...</Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <div className="grid w-full max-w-sm items-center gap-1.5">
               <Input
                 ref={fileInputRef}
@@ -402,12 +437,16 @@ export const Map = () => {
             <Button variant="outline" onClick={() => {
               setIsMessageDialogOpen(false);
               setSelectedFile(null);
+              setSelectedUserIds([]);
               if (fileInputRef.current) fileInputRef.current.value = '';
             }}>
               Cancel
             </Button>
-            <Button onClick={handleSendMessage} disabled={!selectedFile}>
-              Send File
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!selectedFile || selectedUserIds.length === 0}
+            >
+              Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''}
             </Button>
           </DialogFooter>
         </DialogContent>

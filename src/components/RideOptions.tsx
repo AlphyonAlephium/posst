@@ -73,16 +73,12 @@ export const RideOptions = () => {
 
   const handleFileClick = async (message: Message) => {
     try {
-      const { data: { publicUrl }, error } = supabase.storage
+      const { data } = supabase.storage
         .from('message_attachments')
         .getPublicUrl(message.file_path);
 
-      if (error) throw error;
+      window.open(data.publicUrl, '_blank');
 
-      // Open file in new tab
-      window.open(publicUrl, '_blank');
-
-      // Mark as read if unread
       if (!message.read) {
         const { error: updateError } = await supabase
           .from('messages')
@@ -123,7 +119,6 @@ export const RideOptions = () => {
 
     fetchMessages();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel('messages')
       .on('postgres_changes', 
@@ -145,7 +140,6 @@ export const RideOptions = () => {
 
   return (
     <div className="space-y-8 p-4">
-      {/* Wallet Balance Section */}
       <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -163,7 +157,6 @@ export const RideOptions = () => {
         </div>
       </Card>
 
-      {/* Messages Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Files</h2>

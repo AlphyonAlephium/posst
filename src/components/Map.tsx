@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle } from "lucide-react";
 
 interface Location {
   latitude: number;
@@ -33,7 +31,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const { toast } = useToast();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
@@ -78,7 +75,9 @@ export const Map = () => {
     }
   };
 
-  const fetchLocations = async () => {
+  const updateLocationSource = async () => {
+    if (!map.current) return;
+
     const { data: locations, error } = await supabase
       .from('locations')
       .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
@@ -88,44 +87,22 @@ export const Map = () => {
       return;
     }
 
-    if (locations && map.current) {
-      Object.keys(markersRef.current).forEach(userId => {
-        if (!locations.find(loc => loc.user_id === userId)) {
-          markersRef.current[userId].remove();
-          delete markersRef.current[userId];
-        }
-      });
+    if (locations && map.current.getSource('locations')) {
+      const geoJson = {
+        type: 'FeatureCollection',
+        features: locations.map(location => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [location.longitude, location.latitude]
+          },
+          properties: {
+            user_id: location.user_id
+          }
+        }))
+      };
 
-      locations.forEach(location => {
-        if (markersRef.current[location.user_id]) {
-          markersRef.current[location.user_id]
-            .setLngLat([location.longitude, location.latitude]);
-        } else {
-          const marker = new mapboxgl.Marker({
-            color: '#FF0000'
-          })
-            .setLngLat([location.longitude, location.latitude])
-            .addTo(map.current!);
-
-          marker.getElement().addEventListener('click', () => {
-            handleMarkerClick(location.user_id);
-          });
-
-          markersRef.current[location.user_id] = marker;
-        }
-      });
-
-      if (locations.length > 0) {
-        const bounds = new mapboxgl.LngLatBounds();
-        locations.forEach(location => {
-          bounds.extend([location.longitude, location.latitude]);
-        });
-        
-        map.current.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 15
-        });
-      }
+      (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
     }
   };
 
@@ -236,7 +213,124 @@ export const Map = () => {
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
         map.current.on('load', () => {
-          fetchLocations();
+          // Add a new source with cluster properties
+          map.current!.addSource('locations', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: []
+            },
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 50
+          });
+
+          // Add clusters layer
+          map.current!.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            source: 'locations',
+            filter: ['has', 'point_count'],
+            paint: {
+              'circle-color': '#FF0000',
+              'circle-radius': [
+                'step',
+                ['get', 'point_count'],
+                20, // radius for 1-9 points
+                10, 30, // radius for 10+ points
+                20, 40 // radius for 20+ points
+              ],
+              'circle-opacity': 0.8
+            }
+          });
+
+          // Add cluster count labels
+          map.current!.addLayer({
+            id: 'cluster-count',
+            type: 'symbol',
+            source: 'locations',
+            filter: ['has', 'point_count'],
+            layout: {
+              'text-field': '{point_count_abbreviated}',
+              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+              'text-size': 12
+            },
+            paint: {
+              'text-color': '#ffffff'
+            }
+          });
+
+          // Add unclustered point layer
+          map.current!.addLayer({
+            id: 'unclustered-point',
+            type: 'circle',
+            source: 'locations',
+            filter: ['!', ['has', 'point_count']],
+            paint: {
+              'circle-color': '#FF0000',
+              'circle-radius': 15,
+              'circle-opacity': 0.8
+            }
+          });
+
+          // Add unclustered point count
+          map.current!.addLayer({
+            id: 'unclustered-point-count',
+            type: 'symbol',
+            source: 'locations',
+            filter: ['!', ['has', 'point_count']],
+            layout: {
+              'text-field': '1',
+              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+              'text-size': 12
+            },
+            paint: {
+              'text-color': '#ffffff'
+            }
+          });
+
+          // Handle clicks on individual points
+          map.current!.on('click', 'unclustered-point', (e) => {
+            if (e.features && e.features[0].properties) {
+              const userId = e.features[0].properties.user_id;
+              handleMarkerClick(userId);
+            }
+          });
+
+          // Handle clicks on clusters
+          map.current!.on('click', 'clusters', (e) => {
+            const features = map.current!.queryRenderedFeatures(e.point, {
+              layers: ['clusters']
+            });
+            const clusterId = features[0].properties.cluster_id;
+            map.current!.getSource('locations').getClusterExpansionZoom(
+              clusterId,
+              (err, zoom) => {
+                if (err) return;
+
+                map.current!.easeTo({
+                  center: (features[0].geometry as any).coordinates,
+                  zoom: zoom
+                });
+              }
+            );
+          });
+
+          // Change cursor when hovering over points
+          map.current!.on('mouseenter', 'clusters', () => {
+            map.current!.getCanvas().style.cursor = 'pointer';
+          });
+          map.current!.on('mouseleave', 'clusters', () => {
+            map.current!.getCanvas().style.cursor = '';
+          });
+          map.current!.on('mouseenter', 'unclustered-point', () => {
+            map.current!.getCanvas().style.cursor = 'pointer';
+          });
+          map.current!.on('mouseleave', 'unclustered-point', () => {
+            map.current!.getCanvas().style.cursor = '';
+          });
+
+          updateLocationSource();
         });
 
         const subscription = supabase
@@ -248,7 +342,7 @@ export const Map = () => {
               table: 'locations' 
             }, 
             () => {
-              fetchLocations();
+              updateLocationSource();
             }
           )
           .subscribe();
@@ -270,8 +364,6 @@ export const Map = () => {
     initializeMap();
 
     return () => {
-      Object.values(markersRef.current).forEach(marker => marker.remove());
-      markersRef.current = {};
       map.current?.remove();
     };
   }, []);

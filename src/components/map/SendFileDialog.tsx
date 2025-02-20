@@ -13,6 +13,7 @@ import { UserList } from './UserList';
 import { NearbyUser } from './types';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Plus, MinusCircle } from "lucide-react";
 
 const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 
@@ -56,7 +57,6 @@ export const SendFileDialog = ({
         .single();
 
       if (wallet) {
-        // Ensure balance is treated as a number
         setBalance(Number(wallet.balance));
       }
     };
@@ -74,17 +74,25 @@ export const SendFileDialog = ({
   };
 
   const handleSend = async () => {
-    // Convert balance to number and compare with total cost
-    const currentBalance = Number(balance);
-    if (isNaN(currentBalance) || currentBalance < totalCost) {
+    if (!balance || balance < totalCost) {
       toast({
         variant: "destructive",
         title: "Insufficient funds",
-        description: `You need $${totalCost.toFixed(2)} to send this file. Your current balance is $${currentBalance.toFixed(2)}. Please add funds to your wallet.`
+        description: `You need $${totalCost.toFixed(2)} to send this file. Your current balance is $${balance?.toFixed(2) || '0.00'}. Please add funds to your wallet.`
       });
       return;
     }
     onSend();
+  };
+
+  const handleTopUp = () => {
+    // Placeholder for top up functionality
+    console.log("Top up clicked");
+  };
+
+  const handleWithdraw = () => {
+    // Placeholder for withdraw functionality
+    console.log("Withdraw clicked");
   };
 
   return (
@@ -96,9 +104,33 @@ export const SendFileDialog = ({
         <div className="space-y-4">
           <div className="p-4 bg-muted rounded-lg">
             <div className="text-sm space-y-2">
-              <div className="flex justify-between">
-                <span>Your balance:</span>
-                <span className="font-medium">${balance?.toFixed(2) || '0.00'}</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span>Available Balance:</span>
+                    <span className="font-medium text-lg">${balance?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={handleTopUp}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Top up
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={handleWithdraw}
+                    >
+                      <MinusCircle className="h-4 w-4" />
+                      Withdraw
+                    </Button>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between text-primary">
                 <span>Cost per recipient:</span>
@@ -135,7 +167,7 @@ export const SendFileDialog = ({
           <Button 
             onClick={handleSend} 
             disabled={!selectedFile || selectedUserIds.length === 0}
-            className={Number(balance) < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
+            className={balance !== null && balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
           >
             Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
             {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}

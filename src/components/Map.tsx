@@ -5,6 +5,14 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 
+interface UserLocation {
+  latitude: number;
+  longitude: number;
+  profiles: {
+    email: string;
+  } | null;
+}
+
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -16,7 +24,13 @@ export const Map = () => {
   const fetchLocations = async () => {
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('*');
+      .select(`
+        latitude,
+        longitude,
+        profiles:user_id (
+          email
+        )
+      `) as { data: UserLocation[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -30,12 +44,37 @@ export const Map = () => {
     // Add new markers for each location
     if (locations) {
       const newMarkers = locations.map(location => {
+        // Create popup content
+        const popup = new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`
+            <div class="p-2">
+              <p class="font-semibold">${location.profiles?.email || 'Anonymous User'}</p>
+            </div>
+          `);
+
+        // Create marker with popup
         const marker = new mapboxgl.Marker()
           .setLngLat([location.longitude, location.latitude])
+          .setPopup(popup)
           .addTo(map.current!);
+        
         return marker;
       });
+      
       setMarkers(newMarkers);
+
+      // If there are locations, fit the map to show all markers
+      if (locations.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        locations.forEach(location => {
+          bounds.extend([location.longitude, location.latitude]);
+        });
+        
+        map.current?.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 15
+        });
+      }
     }
   };
 
@@ -57,10 +96,26 @@ export const Map = () => {
     // Fetch locations when map is loaded
     map.current.on('load', fetchLocations);
 
+    // Set up real-time subscription for new locations
+    const subscription = supabase
+      .channel('locations')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'locations' 
+        }, 
+        () => {
+          fetchLocations();
+        }
+      )
+      .subscribe();
+
     // Cleanup
     return () => {
       markers.forEach(marker => marker.remove());
       map.current?.remove();
+      subscription.unsubscribe();
     };
   }, [mapboxToken]);
 

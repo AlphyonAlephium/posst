@@ -68,9 +68,12 @@ export const SendFileDialog = ({
   }, [isOpen]);
 
   const handleDistributePayment = async (userId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data: success, error } = await supabase
       .rpc('distribute_payment', {
-        sender_id: (await supabase.auth.getUser()).data.user?.id,
+        sender_id: user.id,
         receiver_id: userId,
         total_amount: COST_PER_RECIPIENT
       });

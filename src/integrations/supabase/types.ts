@@ -134,7 +134,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      distribute_payment: {
+        Args: {
+          sender_id: string
+          receiver_id: string
+          total_amount: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

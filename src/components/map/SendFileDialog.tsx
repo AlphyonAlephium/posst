@@ -15,6 +15,7 @@ import { WalletBalance } from './WalletBalance';
 import { SendFileActions } from './SendFileActions';
 import { useWalletBalance } from './useWalletBalance';
 import { usePaymentDistribution } from './usePaymentDistribution';
+import { supabase } from "@/integrations/supabase/client";
 
 const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 

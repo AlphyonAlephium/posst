@@ -1,10 +1,10 @@
+
 import { Header } from "@/components/Header";
 import { LocationInput } from "@/components/LocationInput";
 import { RideOptions } from "@/components/RideOptions";
 import { Map } from "@/components/Map";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, Send } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
@@ -108,7 +108,6 @@ const Index = () => {
 
     } catch (error) {
       console.error('Error setting location:', error);
-      // Only show generic error if it wasn't handled by the geolocation error handler
       if (error instanceof GeolocationPositionError === false) {
         toast({
           variant: "destructive",
@@ -142,9 +141,12 @@ const Index = () => {
               type="destination"
               placeholder="Where to?"
             />
-            <Button className="w-full h-12 text-lg gradient-button" size="lg">
-              Confirm Pickup
-            </Button>
+            <div className="text-center p-4 bg-primary/5 rounded-lg">
+              <h2 className="text-lg font-semibold text-primary mb-2">Find Users Nearby</h2>
+              <p className="text-muted-foreground">
+                Share your location to connect with users in your area and promote your services
+              </p>
+            </div>
           </div>
         </Card>
 
@@ -155,21 +157,14 @@ const Index = () => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bottom-nav">
-        <div className="max-w-md mx-auto px-4 py-3 flex justify-between gap-4">
+        <div className="max-w-md mx-auto px-4 py-3 flex justify-center">
           <Button 
-            className="flex-1 gradient-button text-white font-semibold"
+            className="gradient-button text-white font-semibold w-full"
             size="lg"
             onClick={handleSetLocation}
           >
             <MapPin className="mr-2 h-5 w-5" />
             Set Location
-          </Button>
-          <Button 
-            className="flex-1 gradient-button text-white font-semibold"
-            size="lg"
-          >
-            <Send className="mr-2 h-5 w-5" />
-            Post
           </Button>
         </div>
       </div>

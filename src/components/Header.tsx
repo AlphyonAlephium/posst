@@ -29,9 +29,7 @@ export const Header = () => {
       
       <div className="flex items-center gap-4">
         <img src="/lovable-uploads/84d4060d-cfc0-4bc5-bf85-247ddb5bfce3.png" alt="Posst Logo" className="h-8" />
-        <div className="bg-primary/10 rounded-full px-[5px] my-0 py-[3px] mx-[70px]">
-          <span className="text-sm font-medium text-primary">Wallet balance: $250.00</span>
-        </div>
+        
       </div>
 
       <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">

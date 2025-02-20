@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -13,7 +12,7 @@ import { UserList } from './UserList';
 import { NearbyUser } from './types';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, MinusCircle } from "lucide-react";
+import { Plus, MinusCircle, Loader2 } from "lucide-react";
 
 const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 
@@ -41,6 +40,7 @@ export const SendFileDialog = ({
   fileInputRef,
 }: SendFileDialogProps) => {
   const [balance, setBalance] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const totalCost = selectedUserIds.length * COST_PER_RECIPIENT;
@@ -82,7 +82,20 @@ export const SendFileDialog = ({
       });
       return;
     }
-    onSend();
+    
+    setIsLoading(true);
+    try {
+      await onSend();
+    } catch (error) {
+      console.error('Error sending file:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send file. Please try again."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTopUp = () => {
@@ -161,16 +174,25 @@ export const SendFileDialog = ({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button 
             onClick={handleSend} 
-            disabled={!selectedFile || selectedUserIds.length === 0}
+            disabled={!selectedFile || selectedUserIds.length === 0 || isLoading}
             className={balance !== null && balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
           >
-            Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
-            {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
+                {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

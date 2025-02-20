@@ -9,6 +9,12 @@ import { MapPin, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
+interface LocationInsert {
+  latitude: number;
+  longitude: number;
+  user_id: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
 
@@ -40,15 +46,15 @@ const Index = () => {
         return;
       }
 
+      const locationData: LocationInsert = {
+        latitude,
+        longitude,
+        user_id: user.id
+      };
+
       const { error } = await supabase
         .from('locations')
-        .insert([
-          {
-            latitude,
-            longitude,
-            user_id: user.id
-          }
-        ]);
+        .insert([locationData]);
 
       if (error) {
         throw error;

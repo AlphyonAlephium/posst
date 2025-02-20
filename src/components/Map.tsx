@@ -5,6 +5,12 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 
+interface Location {
+  latitude: number;
+  longitude: number;
+  user_id: string;
+}
+
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -16,7 +22,7 @@ export const Map = () => {
   const fetchLocations = async () => {
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('*');
+      .select('*') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);

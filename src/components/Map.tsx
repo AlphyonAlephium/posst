@@ -5,12 +5,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 
-interface UserLocation {
+interface Location {
   latitude: number;
   longitude: number;
-  profiles: {
-    email: string;
-  } | null;
+  user_id: string;
 }
 
 export const Map = () => {
@@ -30,14 +28,7 @@ export const Map = () => {
   const fetchLocations = async () => {
     const { data: locations, error } = await supabase
       .from('locations')
-      .select(`
-        latitude,
-        longitude,
-        user_id,
-        profiles (
-          email
-        )
-      `) as { data: (UserLocation & { user_id: string })[] | null, error: any };
+      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -45,8 +36,6 @@ export const Map = () => {
     }
 
     if (locations && map.current) {
-      console.log('Fetched locations:', locations);
-
       // Remove markers that are no longer in the locations data
       Object.keys(markersRef.current).forEach(userId => {
         if (!locations.find(loc => loc.user_id === userId)) {
@@ -57,30 +46,17 @@ export const Map = () => {
 
       // Update or add markers for each location
       locations.forEach(location => {
-        console.log('Processing location:', location);
-
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="p-2">
-              <p class="font-semibold">${location.profiles?.email || 'Anonymous User'}</p>
-            </div>
-          `);
-
         if (markersRef.current[location.user_id]) {
           // Update existing marker position
           markersRef.current[location.user_id]
-            .setLngLat([location.longitude, location.latitude])
-            .setPopup(popup);
+            .setLngLat([location.longitude, location.latitude]);
         } else {
           // Create new marker
           markersRef.current[location.user_id] = new mapboxgl.Marker({
             color: '#FF0000' // Make markers red for better visibility
           })
             .setLngLat([location.longitude, location.latitude])
-            .setPopup(popup)
-            .addTo(map.current);
-          
-          console.log('Created new marker for user:', location.user_id);
+            .addTo(map.current!);
         }
       });
 
@@ -127,7 +103,6 @@ export const Map = () => {
 
         // Wait for map to load before fetching locations
         map.current.on('load', () => {
-          console.log('Map loaded, fetching locations...');
           fetchLocations();
         });
 
@@ -140,8 +115,7 @@ export const Map = () => {
               schema: 'public', 
               table: 'locations' 
             }, 
-            (payload) => {
-              console.log('Real-time update received:', payload);
+            () => {
               fetchLocations();
             }
           )

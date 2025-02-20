@@ -6,8 +6,69 @@ import { Map } from "@/components/Map";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const { toast } = useToast();
+
+  const handleSetLocation = async () => {
+    if (!navigator.geolocation) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Geolocation is not supported by your browser"
+      });
+      return;
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to set your location"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('locations')
+        .insert([
+          {
+            latitude,
+            longitude,
+            user_id: user.id
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Your location has been saved"
+      });
+
+    } catch (error) {
+      console.error('Error setting location:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save your location. Please try again."
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
@@ -41,6 +102,7 @@ const Index = () => {
           <Button 
             className="flex-1 gradient-button text-white font-semibold"
             size="lg"
+            onClick={handleSetLocation}
           >
             <MapPin className="mr-2 h-5 w-5" />
             Set Location

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,13 +7,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { FileUpload } from './FileUpload';
 import { UserList } from './UserList';
 import { NearbyUser } from './types';
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, MinusCircle, Loader2 } from "lucide-react";
+import { WalletBalance } from './WalletBalance';
+import { SendFileActions } from './SendFileActions';
+import { useWalletBalance } from './useWalletBalance';
+import { usePaymentDistribution } from './usePaymentDistribution';
 
 const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 
@@ -40,50 +41,12 @@ export const SendFileDialog = ({
   onSend,
   fileInputRef,
 }: SendFileDialogProps) => {
-  const [balance, setBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { balance, setBalance } = useWalletBalance(isOpen);
+  const { handleDistributePayment } = usePaymentDistribution();
 
   const totalCost = selectedUserIds.length * COST_PER_RECIPIENT;
-
-  useEffect(() => {
-    const fetchBalance = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .single();
-
-      if (wallet) {
-        setBalance(Number(wallet.balance));
-      }
-    };
-
-    if (isOpen) {
-      fetchBalance();
-    }
-  }, [isOpen]);
-
-  const handleDistributePayment = async (userId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
-    const { data: success, error } = await supabase.rpc(
-      'distribute_payment',
-      {
-        sender_id: user.id,
-        receiver_id: userId,
-        total_amount: COST_PER_RECIPIENT
-      } as const
-    );
-
-    if (error || !success) {
-      throw new Error(error?.message || 'Failed to process payment');
-    }
-  };
 
   const handleClose = () => {
     onOpenChange(false);
@@ -106,7 +69,7 @@ export const SendFileDialog = ({
     try {
       // Process payment for each recipient
       for (const userId of selectedUserIds) {
-        await handleDistributePayment(userId);
+        await handleDistributePayment(userId, COST_PER_RECIPIENT);
       }
       await onSend();
       
@@ -140,16 +103,6 @@ export const SendFileDialog = ({
     }
   };
 
-  const handleTopUp = () => {
-    // Placeholder for top up functionality
-    console.log("Top up clicked");
-  };
-
-  const handleWithdraw = () => {
-    // Placeholder for withdraw functionality
-    console.log("Withdraw clicked");
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -157,51 +110,12 @@ export const SendFileDialog = ({
           <DialogTitle>Send File to Multiple Users</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="text-sm space-y-2">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span>Available Balance:</span>
-                    <span className="font-medium text-lg">${balance?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={handleTopUp}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Top up
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={handleWithdraw}
-                    >
-                      <MinusCircle className="h-4 w-4" />
-                      Withdraw
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-between text-primary">
-                <span>Cost per recipient:</span>
-                <span>${COST_PER_RECIPIENT.toFixed(2)}</span>
-              </div>
-              <div className="text-xs text-muted-foreground italic">
-                50% of the fee goes to recipients
-              </div>
-              {selectedUserIds.length > 0 && (
-                <div className="flex justify-between font-medium border-t pt-2 mt-2">
-                  <span>Total cost ({selectedUserIds.length} recipients):</span>
-                  <span>${totalCost.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <WalletBalance
+            balance={balance}
+            totalCost={totalCost}
+            selectedCount={selectedUserIds.length}
+            costPerRecipient={COST_PER_RECIPIENT}
+          />
 
           <UserList
             users={nearbyUsers}
@@ -219,26 +133,15 @@ export const SendFileDialog = ({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSend} 
+          <SendFileActions
+            onClose={handleClose}
+            onSend={handleSend}
+            isLoading={isLoading}
             disabled={!selectedFile || selectedUserIds.length === 0 || isLoading}
-            className={balance !== null && balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Sending...
-              </>
-            ) : (
-              <>
-                Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
-                {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}
-              </>
-            )}
-          </Button>
+            selectedCount={selectedUserIds.length}
+            totalCost={totalCost}
+            insufficientFunds={balance !== null && balance < totalCost}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

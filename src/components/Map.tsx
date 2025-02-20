@@ -145,7 +145,7 @@ export const Map = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upload file to storage
+      // Upload file to storage in the message_attachments bucket
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
 

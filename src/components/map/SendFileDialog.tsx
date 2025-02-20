@@ -53,9 +53,12 @@ export const SendFileDialog = ({
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
-        .single() as unknown as { data: { balance: number } | null };
+        .single();
 
-      setBalance(wallet?.balance || 0);
+      if (wallet) {
+        // Ensure balance is treated as a number
+        setBalance(Number(wallet.balance));
+      }
     };
 
     if (isOpen) {
@@ -71,11 +74,13 @@ export const SendFileDialog = ({
   };
 
   const handleSend = async () => {
-    if (!balance || balance < totalCost) {
+    // Convert balance to number and compare with total cost
+    const currentBalance = Number(balance);
+    if (isNaN(currentBalance) || currentBalance < totalCost) {
       toast({
         variant: "destructive",
         title: "Insufficient funds",
-        description: `You need $${totalCost.toFixed(2)} to send this file. Please add funds to your wallet.`
+        description: `You need $${totalCost.toFixed(2)} to send this file. Your current balance is $${currentBalance.toFixed(2)}. Please add funds to your wallet.`
       });
       return;
     }
@@ -130,7 +135,7 @@ export const SendFileDialog = ({
           <Button 
             onClick={handleSend} 
             disabled={!selectedFile || selectedUserIds.length === 0}
-            className={balance && balance < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
+            className={Number(balance) < totalCost ? "bg-destructive hover:bg-destructive/90" : ""}
           >
             Send to {selectedUserIds.length} User{selectedUserIds.length !== 1 ? 's' : ''} 
             {selectedUserIds.length > 0 && ` ($${totalCost.toFixed(2)})`}

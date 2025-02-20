@@ -16,15 +16,44 @@ const Index = () => {
     if (!navigator.geolocation) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Geolocation is not supported by your browser"
+        title: "Location Services Not Available",
+        description: "Your browser doesn't support location services. Please try using a different browser."
       });
       return;
     }
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (error) => {
+            if (error.code === error.PERMISSION_DENIED) {
+              toast({
+                variant: "destructive",
+                title: "Location Access Denied",
+                description: "Please enable location services in your browser settings to use this feature."
+              });
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              toast({
+                variant: "destructive",
+                title: "Location Unavailable",
+                description: "Unable to detect your location. Please check if location services are enabled on your device."
+              });
+            } else if (error.code === error.TIMEOUT) {
+              toast({
+                variant: "destructive",
+                title: "Request Timeout",
+                description: "Location request timed out. Please check your connection and try again."
+              });
+            }
+            reject(error);
+          },
+          { 
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          }
+        );
       });
 
       const { latitude, longitude } = position.coords;
@@ -59,11 +88,14 @@ const Index = () => {
 
     } catch (error) {
       console.error('Error setting location:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save your location. Please try again."
-      });
+      // Only show generic error if it wasn't handled by the geolocation error handler
+      if (error instanceof GeolocationPositionError === false) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to save your location. Please try again."
+        });
+      }
     }
   };
 

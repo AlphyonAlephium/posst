@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -38,6 +37,12 @@ interface SendFileDialogProps {
   onFileSelect: (file: File | null) => void;
   onSend: () => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
+}
+
+interface UpdateWalletBalanceParams {
+  p_user_id: string;
+  p_amount: number;
+  p_description: string;
 }
 
 export const SendFileDialog = ({
@@ -140,7 +145,7 @@ export const SendFileDialog = ({
         return;
       }
 
-      const { data, error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc<boolean, UpdateWalletBalanceParams>(
         'update_wallet_balance',
         { 
           p_user_id: user.id,

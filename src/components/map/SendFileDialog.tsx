@@ -71,12 +71,14 @@ export const SendFileDialog = ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data: success, error } = await supabase
-      .rpc('distribute_payment', {
+    const { data: success, error } = await supabase.rpc(
+      'distribute_payment',
+      {
         sender_id: user.id,
         receiver_id: userId,
         total_amount: COST_PER_RECIPIENT
-      });
+      } as const
+    );
 
     if (error || !success) {
       throw new Error(error?.message || 'Failed to process payment');

@@ -49,16 +49,11 @@ export const SendFileDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: wallet, error } = await supabase
+      const { data: wallet } = await supabase
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching wallet:', error);
-        return;
-      }
+        .single() as unknown as { data: { balance: number } | null };
 
       setBalance(wallet?.balance || 0);
     };

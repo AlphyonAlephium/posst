@@ -94,14 +94,14 @@ export const Map = () => {
 
       const totalCost = selectedUserIds.length * 0.10;
 
-      // Start a transaction to update wallet and create message
-      const { data: wallet, error: walletError } = await supabase
+      // Get current wallet balance
+      const { data: wallet } = await supabase
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
-        .single();
+        .single() as unknown as { data: { balance: number } | null };
 
-      if (walletError || !wallet || wallet.balance < totalCost) {
+      if (!wallet || wallet.balance < totalCost) {
         throw new Error('Insufficient funds');
       }
 
@@ -118,7 +118,7 @@ export const Map = () => {
       // Update wallet balance
       const { error: balanceError } = await supabase
         .from('wallets')
-        .update({ balance: wallet.balance - totalCost })
+        .update({ balance: wallet.balance - totalCost } as any)
         .eq('user_id', user.id);
 
       if (balanceError) throw balanceError;
@@ -130,7 +130,7 @@ export const Map = () => {
           user_id: user.id,
           amount: -totalCost,
           description: `Sent file to ${selectedUserIds.length} recipients`
-        });
+        } as any);
 
       if (transactionError) throw transactionError;
 

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -11,13 +12,23 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { AlertCircle } from "lucide-react";
 
 interface Location {
   latitude: number;
   longitude: number;
   user_id: string;
 }
+
+const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'application/pdf'
+];
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -27,12 +38,44 @@ export const Map = () => {
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [messageContent, setMessageContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const LATVIA_CENTER = {
     lng: 24.105186,
     lat: 56.946285,
     zoom: 7
+  };
+
+  const validateFile = (file: File) => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please upload a JPG, PNG, GIF, or PDF file"
+      });
+      return false;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "File size must be less than 5MB"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && validateFile(file)) {
+      setSelectedFile(file);
+    } else {
+      event.target.value = '';
+    }
   };
 
   const fetchLocations = async () => {
@@ -112,31 +155,58 @@ export const Map = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedUserId || !messageContent.trim()) return;
-
-    const { error } = await supabase
-      .from('messages')
-      .insert([
-        {
-          sender_id: (await supabase.auth.getUser()).data.user?.id,
-          receiver_id: selectedUserId,
-          content: messageContent.trim()
-        }
-      ]);
-
-    if (error) {
+    if (!selectedUserId || !selectedFile) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send message. Please try again."
+        description: "Please select a file to send"
       });
-    } else {
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Upload file to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('message_attachments')
+        .upload(filePath, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      // Create message record
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: selectedUserId,
+          file_path: filePath,
+          file_name: selectedFile.name,
+          file_type: selectedFile.type
+        });
+
+      if (messageError) throw messageError;
+
       toast({
         title: "Success",
-        description: "Message sent successfully"
+        description: "File sent successfully"
       });
-      setMessageContent('');
+
+      setSelectedFile(null);
       setIsMessageDialogOpen(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send file. Please try again."
+      });
     }
   };
 
@@ -215,19 +285,38 @@ export const Map = () => {
       <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Message</DialogTitle>
+            <DialogTitle>Send File</DialogTitle>
           </DialogHeader>
-          <Textarea
-            placeholder="Type your message here..."
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-            className="min-h-[100px]"
-          />
+          <div className="space-y-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.gif,.pdf"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              <p className="text-sm text-muted-foreground">
+                Accepted formats: JPG, PNG, GIF, PDF (Max 5MB)
+              </p>
+            </div>
+            {selectedFile && (
+              <p className="text-sm text-primary">
+                Selected file: {selectedFile.name}
+              </p>
+            )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMessageDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsMessageDialogOpen(false);
+              setSelectedFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleSendMessage}>Send Message</Button>
+            <Button onClick={handleSendMessage} disabled={!selectedFile}>
+              Send File
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

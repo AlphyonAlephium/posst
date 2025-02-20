@@ -1,5 +1,4 @@
-
-import { Car, AlertCircle, Mail, Wallet } from "lucide-react";
+import { Car, AlertCircle, Mail, Wallet, FileIcon, Image } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -23,10 +22,12 @@ interface PostboxItem {
 
 interface Message {
   id: string;
-  content: string;
   created_at: string;
   read: boolean;
   sender_id: string;
+  file_path: string;
+  file_name: string;
+  file_type: string;
 }
 
 const rideOptions: RideOption[] = [{
@@ -69,6 +70,38 @@ const postboxItems: PostboxItem[] = [{
 export const RideOptions = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const handleFileClick = async (message: Message) => {
+    try {
+      const { data: { publicUrl }, error } = supabase.storage
+        .from('message_attachments')
+        .getPublicUrl(message.file_path);
+
+      if (error) throw error;
+
+      // Open file in new tab
+      window.open(publicUrl, '_blank');
+
+      // Mark as read if unread
+      if (!message.read) {
+        const { error: updateError } = await supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('id', message.id);
+
+        if (updateError) throw updateError;
+      }
+    } catch (error) {
+      console.error('Error handling file:', error);
+    }
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
+      return <Image className="h-5 w-5" />;
+    }
+    return <FileIcon className="h-5 w-5" />;
+  };
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -130,40 +163,10 @@ export const RideOptions = () => {
         </div>
       </Card>
 
-      {/* Ride Options Section */}
-
-      {/* Postbox Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">My posst-box</h2>
-          <Badge variant="secondary" className="rounded-full px-2 py-0.5">
-            {postboxItems.filter(item => item.status === "unread").length} new
-          </Badge>
-        </div>
-        <div className="space-y-3">
-          {postboxItems.map(item => <Card key={item.id} className={cn("p-4 hover:bg-accent transition-colors cursor-pointer", item.status === "unread" && "border-primary/50 bg-primary/5")}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={cn("p-2 rounded-full", item.status === "unread" ? "bg-primary/10" : "bg-muted")}>
-                    <Mail className={cn("h-5 w-5", item.status === "unread" ? "text-primary" : "text-muted-foreground")} />
-                  </div>
-                  <div>
-                    <h3 className={cn("font-medium", item.status === "unread" && "text-primary")}>
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{item.time}</p>
-                  </div>
-                </div>
-                {item.status === "unread" && <div className="h-2 w-2 rounded-full bg-primary" />}
-              </div>
-            </Card>)}
-        </div>
-      </div>
-
       {/* Messages Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Inbox</h2>
+          <h2 className="text-xl font-semibold">Files</h2>
           <Badge variant="secondary" className="rounded-full px-2 py-0.5">
             {unreadCount} new
           </Badge>
@@ -176,6 +179,7 @@ export const RideOptions = () => {
                 "p-4 hover:bg-accent transition-colors cursor-pointer",
                 !message.read && "border-primary/50 bg-primary/5"
               )}
+              onClick={() => handleFileClick(message)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -183,10 +187,7 @@ export const RideOptions = () => {
                     "p-2 rounded-full",
                     !message.read ? "bg-primary/10" : "bg-muted"
                   )}>
-                    <Mail className={cn(
-                      "h-5 w-5",
-                      !message.read ? "text-primary" : "text-muted-foreground"
-                    )} />
+                    {getFileIcon(message.file_type)}
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
@@ -196,7 +197,7 @@ export const RideOptions = () => {
                       "mt-1",
                       !message.read && "font-medium text-primary"
                     )}>
-                      {message.content}
+                      {message.file_name}
                     </p>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,6 @@ export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
-  const [mapboxToken, setMapboxToken] = useState('');
   const { toast } = useToast();
 
   // Latvia's coordinates (centered on Riga)
@@ -46,7 +45,7 @@ export const Map = () => {
     }
 
     if (locations && map.current) {
-      console.log('Fetched locations:', locations); // Debug log
+      console.log('Fetched locations:', locations);
 
       // Remove markers that are no longer in the locations data
       Object.keys(markersRef.current).forEach(userId => {
@@ -58,7 +57,7 @@ export const Map = () => {
 
       // Update or add markers for each location
       locations.forEach(location => {
-        console.log('Processing location:', location); // Debug log
+        console.log('Processing location:', location);
 
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
@@ -81,7 +80,7 @@ export const Map = () => {
             .setPopup(popup)
             .addTo(map.current);
           
-          console.log('Created new marker for user:', location.user_id); // Debug log
+          console.log('Created new marker for user:', location.user_id);
         }
       });
 
@@ -101,66 +100,76 @@ export const Map = () => {
   };
 
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapContainer.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [LATVIA_CENTER.lng, LATVIA_CENTER.lat],
-      zoom: LATVIA_CENTER.zoom
-    });
+    const initializeMap = async () => {
+      try {
+        const { data: { MAPBOX_PUBLIC_TOKEN }, error } = await supabase
+          .functions.invoke('get-secret', {
+            body: { secretName: 'MAPBOX_PUBLIC_TOKEN' }
+          });
 
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    // Wait for map to load before fetching locations
-    map.current.on('load', () => {
-      console.log('Map loaded, fetching locations...'); // Debug log
-      fetchLocations();
-    });
-
-    // Set up real-time subscription for new locations
-    const subscription = supabase
-      .channel('locations')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'locations' 
-        }, 
-        (payload) => {
-          console.log('Real-time update received:', payload); // Debug log
-          fetchLocations();
+        if (error || !MAPBOX_PUBLIC_TOKEN) {
+          throw new Error('Failed to get Mapbox token');
         }
-      )
-      .subscribe();
+
+        mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN;
+        
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [LATVIA_CENTER.lng, LATVIA_CENTER.lat],
+          zoom: LATVIA_CENTER.zoom
+        });
+
+        // Add navigation controls
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Wait for map to load before fetching locations
+        map.current.on('load', () => {
+          console.log('Map loaded, fetching locations...');
+          fetchLocations();
+        });
+
+        // Set up real-time subscription for new locations
+        const subscription = supabase
+          .channel('locations')
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'locations' 
+            }, 
+            (payload) => {
+              console.log('Real-time update received:', payload);
+              fetchLocations();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          subscription.unsubscribe();
+        };
+
+      } catch (error) {
+        console.error('Error initializing map:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to initialize map. Please try again later."
+        });
+      }
+    };
+
+    initializeMap();
 
     // Cleanup
     return () => {
       Object.values(markersRef.current).forEach(marker => marker.remove());
       markersRef.current = {};
       map.current?.remove();
-      subscription.unsubscribe();
     };
-  }, [mapboxToken]);
-
-  if (!mapboxToken) {
-    return (
-      <div className="p-4 text-center">
-        <input
-          type="text"
-          placeholder="Enter your Mapbox public token"
-          className="w-full p-2 border rounded mb-2"
-          onChange={(e) => setMapboxToken(e.target.value)}
-        />
-        <p className="text-sm text-muted-foreground">
-          Enter your Mapbox public token to view the map. Get one at mapbox.com
-        </p>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="relative w-full h-[300px] rounded-lg overflow-hidden">

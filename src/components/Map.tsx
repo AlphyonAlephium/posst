@@ -16,8 +16,8 @@ interface UserLocation {
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [mapboxToken, setMapboxToken] = useState('');
-  const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
   const { toast } = useToast();
 
   // Fetch and display all locations
@@ -27,24 +27,28 @@ export const Map = () => {
       .select(`
         latitude,
         longitude,
-        profiles:user_id (
+        user_id,
+        profiles (
           email
         )
-      `) as { data: UserLocation[] | null, error: any };
+      `) as { data: (UserLocation & { user_id: string })[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
       return;
     }
 
-    // Clear existing markers
-    markers.forEach(marker => marker.remove());
-    setMarkers([]);
+    if (locations && map.current) {
+      // Remove markers that are no longer in the locations data
+      Object.keys(markersRef.current).forEach(userId => {
+        if (!locations.find(loc => loc.user_id === userId)) {
+          markersRef.current[userId].remove();
+          delete markersRef.current[userId];
+        }
+      });
 
-    // Add new markers for each location
-    if (locations) {
-      const newMarkers = locations.map(location => {
-        // Create popup content
+      // Update or add markers for each location
+      locations.forEach(location => {
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
             <div class="p-2">
@@ -52,25 +56,28 @@ export const Map = () => {
             </div>
           `);
 
-        // Create marker with popup
-        const marker = new mapboxgl.Marker()
-          .setLngLat([location.longitude, location.latitude])
-          .setPopup(popup)
-          .addTo(map.current!);
-        
-        return marker;
+        if (markersRef.current[location.user_id]) {
+          // Update existing marker position
+          markersRef.current[location.user_id]
+            .setLngLat([location.longitude, location.latitude])
+            .setPopup(popup);
+        } else {
+          // Create new marker
+          markersRef.current[location.user_id] = new mapboxgl.Marker()
+            .setLngLat([location.longitude, location.latitude])
+            .setPopup(popup)
+            .addTo(map.current);
+        }
       });
-      
-      setMarkers(newMarkers);
 
-      // If there are locations, fit the map to show all markers
+      // Fit map to show all markers if there are any locations
       if (locations.length > 0) {
         const bounds = new mapboxgl.LngLatBounds();
         locations.forEach(location => {
           bounds.extend([location.longitude, location.latitude]);
         });
         
-        map.current?.fitBounds(bounds, {
+        map.current.fitBounds(bounds, {
           padding: 50,
           maxZoom: 15
         });
@@ -113,7 +120,8 @@ export const Map = () => {
 
     // Cleanup
     return () => {
-      markers.forEach(marker => marker.remove());
+      Object.values(markersRef.current).forEach(marker => marker.remove());
+      markersRef.current = {};
       map.current?.remove();
       subscription.unsubscribe();
     };

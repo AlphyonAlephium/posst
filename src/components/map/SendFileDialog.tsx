@@ -13,6 +13,7 @@ import { UserList } from './UserList';
 import { NearbyUser } from './types';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Plus, MinusCircle } from "lucide-react";
 
 const COST_PER_RECIPIENT = 0.10; // 10 cents per recipient
 
@@ -67,7 +68,7 @@ export const SendFileDialog = ({
 
         if (wallet) {
           console.log('Wallet data:', wallet);
-          const numericBalance = parseFloat(wallet.balance);
+          const numericBalance = parseFloat(String(wallet.balance));
           console.log('Parsed balance:', numericBalance);
           setBalance(numericBalance);
         }
@@ -103,6 +104,20 @@ export const SendFileDialog = ({
     onSend();
   };
 
+  const handleTopUp = () => {
+    toast({
+      title: "Top Up",
+      description: "Top up functionality coming soon!"
+    });
+  };
+
+  const handleWithdraw = () => {
+    toast({
+      title: "Withdraw",
+      description: "Withdraw functionality coming soon!"
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -112,9 +127,31 @@ export const SendFileDialog = ({
         <div className="space-y-4">
           <div className="p-4 bg-muted rounded-lg">
             <div className="text-sm space-y-2">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Your balance:</span>
-                <span className="font-medium">${balance.toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">${balance.toFixed(2)}</span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={handleTopUp}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Top up
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={handleWithdraw}
+                    >
+                      <MinusCircle className="h-4 w-4 mr-1" />
+                      Withdraw
+                    </Button>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between text-primary">
                 <span>Cost per recipient:</span>

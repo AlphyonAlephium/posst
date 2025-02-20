@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { LocationInput } from "@/components/LocationInput";
 import { RideOptions } from "@/components/RideOptions";
 import { Map } from "@/components/Map";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

@@ -27,7 +27,7 @@ export const Header = () => {
       <div className="w-10" /> {/* Spacer for centering */}
       
       <div className="flex items-center gap-4">
-        <img src="/lovable-uploads/84d4060d-cfc0-4bc5-bf85-247ddb5bfce3.png" alt="Posst Logo" className="h-8" />
+        <img src="/lovable-uploads/4ad7bf13-9495-4645-bb04-a223decfd6ad.png" alt="Posst Logo" className="h-8" />
       </div>
 
       <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">

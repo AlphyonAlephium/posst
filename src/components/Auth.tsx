@@ -94,7 +94,7 @@ export const Auth = () => {
     <Card className="w-full max-w-md mx-auto p-6 glass-card">
       <div className="flex flex-col items-center mb-8">
         <img
-          src="/lovable-uploads/84d4060d-cfc0-4bc5-bf85-247ddb5bfce3.png"
+          src="/lovable-uploads/4ad7bf13-9495-4645-bb04-a223decfd6ad.png"
           alt="Posst Logo"
           className="h-16 mb-4"
         />

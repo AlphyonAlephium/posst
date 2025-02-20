@@ -8,24 +8,24 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 220 9% 46%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 220 9% 46%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 9% 46%;
-    --primary: 32 100% 50%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 108 66% 61%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 220 9% 46%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 32 15% 95%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 32 15% 95%;
-    --accent-foreground: 220 9% 46%;
+    --secondary: 108 66% 95%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 108 66% 95%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 108 66% 95%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 32 100% 50%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 108 66% 61%;
     --radius: 0.75rem;
   }
 }
@@ -41,7 +41,7 @@
 
 .glass-card {
   @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg;
-  background: linear-gradient(109.6deg, rgba(255,243,230,1) 11.2%, rgba(255,247,252,1) 91.1%);
+  background: linear-gradient(109.6deg, rgba(223,234,247,1) 11.2%, rgba(244,248,252,1) 91.1%);
 }
 
 .slide-up {
@@ -79,7 +79,7 @@
 }
 
 .gradient-button {
-  background: linear-gradient(90deg, #ff9500 0%, #ff7a00 100%);
+  background: linear-gradient(90deg, #7ed957 0%, #5fb840 100%);
   transition: all 0.3s ease;
 }
 

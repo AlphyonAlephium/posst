@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { LocationInput } from "@/components/LocationInput";
 import { RideOptions } from "@/components/RideOptions";
@@ -8,9 +7,30 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const [userName, setUserName] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.email) {
+          setUserName(profile.email.split('@')[0]);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const handleSetLocation = async () => {
     if (!navigator.geolocation) {
@@ -104,6 +124,13 @@ const Index = () => {
       <Header />
       
       <main className="pt-20 px-4 pb-4 max-w-md mx-auto">
+        {userName && (
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-primary">
+              Welcome back, {userName}! 👋
+            </h1>
+          </div>
+        )}
         <Card className="glass-card p-6 mb-6 fade-in">
           <div className="space-y-4">
             <Map />

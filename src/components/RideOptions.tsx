@@ -2,6 +2,9 @@ import { Car, AlertCircle, Mail, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
 interface RideOption {
   id: string;
   name: string;
@@ -9,12 +12,22 @@ interface RideOption {
   time: string;
   type: string;
 }
+
 interface PostboxItem {
   id: string;
   title: string;
   time: string;
   status: "unread" | "read";
 }
+
+interface Message {
+  id: string;
+  content: string;
+  created_at: string;
+  read: boolean;
+  sender_id: string;
+}
+
 const rideOptions: RideOption[] = [{
   id: "1",
   name: "UberX",
@@ -34,6 +47,7 @@ const rideOptions: RideOption[] = [{
   time: "6 min",
   type: "Large"
 }];
+
 const postboxItems: PostboxItem[] = [{
   id: "1",
   title: "New ride request",
@@ -50,8 +64,53 @@ const postboxItems: PostboxItem[] = [{
   time: "2 hours ago",
   status: "read"
 }];
+
 export const RideOptions = () => {
-  return <div className="space-y-8 p-4">
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const { data: messages, error } = await supabase
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+
+      if (messages) {
+        setMessages(messages);
+        setUnreadCount(messages.filter(msg => !msg.read).length);
+      }
+    };
+
+    fetchMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('messages')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'messages' 
+        }, 
+        () => {
+          fetchMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return (
+    <div className="space-y-8 p-4">
       {/* Wallet Balance Section */}
       <Card className="p-6 bg-gradient-to-r from-primary/10 to-primary/5">
         <div className="flex items-center justify-between">
@@ -71,7 +130,6 @@ export const RideOptions = () => {
       </Card>
 
       {/* Ride Options Section */}
-      
 
       {/* Postbox Section */}
       <div className="space-y-4">
@@ -100,5 +158,55 @@ export const RideOptions = () => {
             </Card>)}
         </div>
       </div>
-    </div>;
+
+      {/* Messages Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold">Inbox</h2>
+          <Badge variant="secondary" className="rounded-full px-2 py-0.5">
+            {unreadCount} new
+          </Badge>
+        </div>
+        <div className="space-y-3">
+          {messages.map((message) => (
+            <Card
+              key={message.id}
+              className={cn(
+                "p-4 hover:bg-accent transition-colors cursor-pointer",
+                !message.read && "border-primary/50 bg-primary/5"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={cn(
+                    "p-2 rounded-full",
+                    !message.read ? "bg-primary/10" : "bg-muted"
+                  )}>
+                    <Mail className={cn(
+                      "h-5 w-5",
+                      !message.read ? "text-primary" : "text-muted-foreground"
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(message.created_at).toLocaleString()}
+                    </p>
+                    <p className={cn(
+                      "mt-1",
+                      !message.read && "font-medium text-primary"
+                    )}>
+                      {message.content}
+                    </p>
+                  </div>
+                </div>
+                {!message.read && (
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };

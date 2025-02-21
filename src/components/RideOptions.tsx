@@ -1,10 +1,17 @@
-import { Car, AlertCircle, Mail, Wallet, FileIcon, Image } from "lucide-react";
+
+import { Car, AlertCircle, Mail, Wallet, FileIcon, Image, CheckCircle2, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip } from "@/components/ui/tooltip";
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RideOption {
   id: string;
@@ -243,6 +250,20 @@ export const RideOptions = () => {
                         <p className="text-sm">{message.file_name}</p>
                       </div>
                     </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {message.read ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <CircleDot className="h-5 w-5 text-gray-400" />
+                          )}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{message.read ? 'File opened by recipient' : 'Not opened yet'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </Card>
               ))}

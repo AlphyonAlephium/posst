@@ -5,7 +5,7 @@ import { RideOptions } from "@/components/RideOptions";
 import { Map } from "@/components/Map";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
@@ -119,6 +119,43 @@ const Index = () => {
     }
   };
 
+  const handleDeleteLocation = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to delete your location"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('locations')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Your location has been deleted"
+      });
+
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete your location. Please try again."
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header />
@@ -158,7 +195,7 @@ const Index = () => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bottom-nav">
-        <div className="max-w-md mx-auto px-4 py-3 flex justify-center">
+        <div className="max-w-md mx-auto px-4 py-3 flex justify-center gap-2">
           <Button 
             className="gradient-button text-white font-semibold w-full"
             size="lg"
@@ -166,6 +203,15 @@ const Index = () => {
           >
             <MapPin className="mr-2 h-5 w-5" />
             Set Location
+          </Button>
+          <Button 
+            variant="destructive"
+            size="lg"
+            onClick={handleDeleteLocation}
+            className="w-full"
+          >
+            <Trash2 className="mr-2 h-5 w-5" />
+            Delete Location
           </Button>
         </div>
       </div>

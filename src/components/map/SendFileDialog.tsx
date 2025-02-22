@@ -29,8 +29,8 @@ interface SendFileDialogProps {
   onUserSelect: (userIds: string[]) => void;
   selectedFile: File | null;
   onFileSelect: (file: File | null) => void;
-  onSend: () => void;
-  fileInputRef: React.RefRef<HTMLInputElement>;
+  onSend: (companyName: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
 export const SendFileDialog = ({
@@ -86,8 +86,8 @@ export const SendFileDialog = ({
         await handleDistributePayment(userId, COST_PER_RECIPIENT);
       }
 
-      // Update the onSend function to include company_name
-      await onSend(companyName);
+      // Call onSend with companyName
+      onSend(companyName);
       
       // Refresh balance after successful send
       const { data: { user } } = await supabase.auth.getUser();

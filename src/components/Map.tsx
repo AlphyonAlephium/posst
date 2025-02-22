@@ -1,56 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
+
+import React, { useRef, useState } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 import { SendFileDialog } from './map/SendFileDialog';
-import { Location, NearbyUser, LATVIA_CENTER } from './map/types';
+import { NearbyUser } from './map/types';
+import { useMap } from './map/hooks/useMap';
+import { setupMapLayers } from './map/MapLayers';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const { toast } = useToast();
+  const { map, initializeMap, updateLocationSource } = useMap();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const updateLocationSource = async () => {
-    if (!map.current) return;
-
-    const { data: locations, error } = await supabase
-      .from('locations')
-      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
-
-    if (error) {
-      console.error('Error fetching locations:', error);
-      return;
-    }
-
-    if (locations) {
-      setNearbyUsers(locations.map(loc => ({ user_id: loc.user_id! })));
-
-      if (map.current.getSource('locations')) {
-        const geoJson = {
-          type: 'FeatureCollection',
-          features: locations.map(location => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [location.longitude, location.latitude]
-            },
-            properties: {
-              user_id: location.user_id
-            }
-          }))
-        };
-
-        (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
-      }
-    }
-  };
 
   const handleMarkerClick = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -171,110 +138,21 @@ export const Map = () => {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!mapContainer.current) return;
 
-    const initializeMap = async () => {
+    const setupMap = async () => {
       try {
-        const { data: { MAPBOX_PUBLIC_TOKEN }, error } = await supabase
-          .functions.invoke('get-secret', {
-            body: { secretName: 'MAPBOX_PUBLIC_TOKEN' }
-          });
-
-        if (error || !MAPBOX_PUBLIC_TOKEN) {
-          throw new Error('Failed to get Mapbox token');
-        }
-
-        mapboxgl.accessToken = MAPBOX_PUBLIC_TOKEN;
+        const mapInstance = await initializeMap(mapContainer.current!);
         
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [LATVIA_CENTER.lng, LATVIA_CENTER.lat],
-          zoom: LATVIA_CENTER.zoom
-        });
-
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-        map.current.on('load', () => {
-          // Add a new source with cluster properties
-          map.current!.addSource('locations', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: []
-            },
-            cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50
-          });
-
-          // Add clusters layer
-          map.current!.addLayer({
-            id: 'clusters',
-            type: 'circle',
-            source: 'locations',
-            filter: ['has', 'point_count'],
-            paint: {
-              'circle-color': '#FFFFFF',
-              'circle-radius': [
-                'step',
-                ['get', 'point_count'],
-                20,
-                10, 30,
-                20, 40
-              ],
-              'circle-opacity': 0.8
-            }
-          });
-
-          // Add cluster count labels
-          map.current!.addLayer({
-            id: 'cluster-count',
-            type: 'symbol',
-            source: 'locations',
-            filter: ['has', 'point_count'],
-            layout: {
-              'text-field': '{point_count_abbreviated}',
-              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-              'text-size': 12
-            },
-            paint: {
-              'text-color': '#7ed957'
-            }
-          });
-
-          // Add unclustered point layer
-          map.current!.addLayer({
-            id: 'unclustered-point',
-            type: 'circle',
-            source: 'locations',
-            filter: ['!', ['has', 'point_count']],
-            paint: {
-              'circle-color': '#FFFFFF',
-              'circle-radius': 15,
-              'circle-opacity': 0.8
-            }
-          });
-
-          // Add unclustered point count
-          map.current!.addLayer({
-            id: 'unclustered-point-count',
-            type: 'symbol',
-            source: 'locations',
-            filter: ['!', ['has', 'point_count']],
-            layout: {
-              'text-field': '1',
-              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-              'text-size': 12
-            },
-            paint: {
-              'text-color': '#7ed957'
-            }
+        mapInstance.on('load', () => {
+          setupMapLayers(mapInstance);
+          updateLocationSource().then(users => {
+            setNearbyUsers(users);
           });
 
           // Handle clicks on individual points
-          map.current!.on('click', 'unclustered-point', (e) => {
+          mapInstance.on('click', 'unclustered-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
               handleMarkerClick(userId);
@@ -282,17 +160,17 @@ export const Map = () => {
           });
 
           // Handle clicks on clusters
-          map.current!.on('click', 'clusters', (e) => {
-            const features = map.current!.queryRenderedFeatures(e.point, {
+          mapInstance.on('click', 'clusters', (e) => {
+            const features = mapInstance.queryRenderedFeatures(e.point, {
               layers: ['clusters']
             });
             const clusterId = features[0].properties.cluster_id;
-            (map.current!.getSource('locations') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
+            (mapInstance.getSource('locations') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
               clusterId,
               (err, zoom) => {
                 if (err) return;
 
-                map.current!.easeTo({
+                mapInstance.easeTo({
                   center: (features[0].geometry as any).coordinates,
                   zoom: zoom
                 });
@@ -301,20 +179,18 @@ export const Map = () => {
           });
 
           // Change cursor when hovering over points
-          map.current!.on('mouseenter', 'clusters', () => {
-            map.current!.getCanvas().style.cursor = 'pointer';
+          mapInstance.on('mouseenter', 'clusters', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
           });
-          map.current!.on('mouseleave', 'clusters', () => {
-            map.current!.getCanvas().style.cursor = '';
+          mapInstance.on('mouseleave', 'clusters', () => {
+            mapInstance.getCanvas().style.cursor = '';
           });
-          map.current!.on('mouseenter', 'unclustered-point', () => {
-            map.current!.getCanvas().style.cursor = 'pointer';
+          mapInstance.on('mouseenter', 'unclustered-point', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
           });
-          map.current!.on('mouseleave', 'unclustered-point', () => {
-            map.current!.getCanvas().style.cursor = '';
+          mapInstance.on('mouseleave', 'unclustered-point', () => {
+            mapInstance.getCanvas().style.cursor = '';
           });
-
-          updateLocationSource();
         });
 
         const subscription = supabase
@@ -326,7 +202,9 @@ export const Map = () => {
               table: 'locations' 
             }, 
             () => {
-              updateLocationSource();
+              updateLocationSource().then(users => {
+                setNearbyUsers(users);
+              });
             }
           )
           .subscribe();
@@ -334,9 +212,8 @@ export const Map = () => {
         return () => {
           subscription.unsubscribe();
         };
-
       } catch (error) {
-        console.error('Error initializing map:', error);
+        console.error('Error in setupMap:', error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -345,7 +222,7 @@ export const Map = () => {
       }
     };
 
-    initializeMap();
+    setupMap();
 
     return () => {
       map.current?.remove();

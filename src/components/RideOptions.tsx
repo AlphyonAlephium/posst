@@ -168,7 +168,7 @@ export const RideOptions = () => {
         .from('wallets')
         .select('balance')
         .eq('user_id', user.id)
-        .single() as unknown as { data: { balance: number } | null };
+        .single();
 
       if (wallet) {
         setBalance(wallet.balance);

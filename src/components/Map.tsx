@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -78,7 +77,7 @@ export const Map = () => {
     setIsMessageDialogOpen(true);
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (companyName: string) => {
     if (selectedUserIds.length === 0 || !selectedFile) {
       toast({
         variant: "destructive",
@@ -140,7 +139,8 @@ export const Map = () => {
         receiver_id: receiverId,
         file_path: filePath,
         file_name: selectedFile.name,
-        file_type: selectedFile.type
+        file_type: selectedFile.type,
+        company_name: companyName
       }));
 
       const { error: messageError } = await supabase

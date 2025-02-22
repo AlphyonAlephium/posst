@@ -35,6 +35,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          company_name: string
           created_at: string | null
           feedback: string | null
           file_name: string
@@ -46,6 +47,7 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          company_name: string
           created_at?: string | null
           feedback?: string | null
           file_name: string
@@ -57,6 +59,7 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          company_name?: string
           created_at?: string | null
           feedback?: string | null
           file_name?: string

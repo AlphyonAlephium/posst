@@ -7,6 +7,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { FileUpload } from './FileUpload';
 import { UserList } from './UserList';
 import { NearbyUser } from './types';
@@ -28,7 +30,7 @@ interface SendFileDialogProps {
   selectedFile: File | null;
   onFileSelect: (file: File | null) => void;
   onSend: () => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefRef<HTMLInputElement>;
 }
 
 export const SendFileDialog = ({
@@ -43,6 +45,7 @@ export const SendFileDialog = ({
   fileInputRef,
 }: SendFileDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [companyName, setCompanyName] = useState('');
   const { toast } = useToast();
   const { balance, setBalance } = useWalletBalance(isOpen);
   const { handleDistributePayment } = usePaymentDistribution();
@@ -53,6 +56,7 @@ export const SendFileDialog = ({
     onOpenChange(false);
     onFileSelect(null);
     onUserSelect([]);
+    setCompanyName('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -65,6 +69,15 @@ export const SendFileDialog = ({
       });
       return;
     }
+
+    if (!companyName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Company name required",
+        description: "Please enter a company or service name"
+      });
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -72,7 +85,9 @@ export const SendFileDialog = ({
       for (const userId of selectedUserIds) {
         await handleDistributePayment(userId, COST_PER_RECIPIENT);
       }
-      await onSend();
+
+      // Update the onSend function to include company_name
+      await onSend(companyName);
       
       // Refresh balance after successful send
       const { data: { user } } = await supabase.auth.getUser();
@@ -92,6 +107,8 @@ export const SendFileDialog = ({
         title: "Success",
         description: `File sent successfully! 50% of the fee will go to recipients.`
       });
+
+      handleClose();
     } catch (error) {
       console.error('Error sending file:', error);
       toast({
@@ -118,15 +135,27 @@ export const SendFileDialog = ({
             costPerRecipient={COST_PER_RECIPIENT}
           />
 
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company or Service Name</Label>
+            <Input
+              id="companyName"
+              placeholder="Enter company or service name"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+            />
+          </div>
+
           <UserList
             users={nearbyUsers}
             selectedUserIds={selectedUserIds}
             onUserSelect={onUserSelect}
           />
+          
           <FileUpload
             onFileSelect={onFileSelect}
             fileInputRef={fileInputRef}
           />
+          
           {selectedFile && (
             <p className="text-sm text-primary">
               Selected file: {selectedFile.name}
@@ -138,7 +167,7 @@ export const SendFileDialog = ({
             onClose={handleClose}
             onSend={handleSend}
             isLoading={isLoading}
-            disabled={!selectedFile || selectedUserIds.length === 0 || isLoading}
+            disabled={!selectedFile || !companyName.trim() || selectedUserIds.length === 0 || isLoading}
             selectedCount={selectedUserIds.length}
             totalCost={totalCost}
             insufficientFunds={balance !== null && balance < totalCost}

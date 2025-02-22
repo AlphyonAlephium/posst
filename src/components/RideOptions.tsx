@@ -1,4 +1,3 @@
-
 import { Car, AlertCircle, Mail, Wallet, FileIcon, Image, CheckCircle2, CircleDot, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -31,12 +30,13 @@ interface Message {
   file_path: string;
   file_name: string;
   file_type: string;
+  company_name: string;
   feedback?: 'interested' | 'not_interested' | null;
 }
 
 // Validate feedback type
 const isValidFeedback = (feedback: string | null): feedback is 'interested' | 'not_interested' | null => {
-  return feedback === 'interested' || feedback === 'not_interested' || feedback === null;
+  return feedback === 'interested' || feedback === 'not_interested' || null;
 };
 
 const rideOptions: RideOption[] = [
@@ -262,7 +262,7 @@ export const RideOptions = () => {
                           "text-sm",
                           !message.read && "font-medium text-primary"
                         )}>
-                          {message.file_name}
+                          {message.company_name}
                         </p>
                       </div>
                     </div>
@@ -372,4 +372,3 @@ export const RideOptions = () => {
     </div>
   );
 };
-

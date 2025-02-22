@@ -34,6 +34,11 @@ interface Message {
   feedback?: 'interested' | 'not_interested' | null;
 }
 
+// Validate feedback type
+const isValidFeedback = (feedback: string | null): feedback is 'interested' | 'not_interested' | null => {
+  return feedback === 'interested' || feedback === 'not_interested' || feedback === null;
+};
+
 const rideOptions: RideOption[] = [
   {
     id: "1",
@@ -81,7 +86,6 @@ export const RideOptions = () => {
 
         if (updateError) throw updateError;
         
-        // Show feedback buttons after opening an unread file
         setShowFeedback(message.id);
       }
     } catch (error) {
@@ -104,7 +108,6 @@ export const RideOptions = () => {
         description: "Thank you for your feedback!",
       });
 
-      // Refresh messages to show updated feedback
       fetchMessages();
     } catch (error) {
       console.error('Error sending feedback:', error);
@@ -150,12 +153,20 @@ export const RideOptions = () => {
     }
 
     if (receivedMessages) {
-      setMessages(receivedMessages);
-      setUnreadCount(receivedMessages.filter(msg => !msg.read).length);
+      const validatedMessages = receivedMessages.map(msg => ({
+        ...msg,
+        feedback: isValidFeedback(msg.feedback) ? msg.feedback : null
+      }));
+      setMessages(validatedMessages);
+      setUnreadCount(validatedMessages.filter(msg => !msg.read).length);
     }
 
     if (sentMessages) {
-      setSentMessages(sentMessages);
+      const validatedSentMessages = sentMessages.map(msg => ({
+        ...msg,
+        feedback: isValidFeedback(msg.feedback) ? msg.feedback : null
+      }));
+      setSentMessages(validatedSentMessages);
     }
   };
 
@@ -361,3 +372,4 @@ export const RideOptions = () => {
     </div>
   );
 };
+

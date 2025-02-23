@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const usePaymentDistribution = () => {
-  const handleDistributePayment = async (userId: string, amount: number): Promise<boolean> => {
+  const handleDistributePayment = async (userId: string, amount: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -16,10 +16,8 @@ export const usePaymentDistribution = () => {
     );
 
     if (error || !success) {
-      return false;
+      throw new Error(error?.message || 'Failed to process payment');
     }
-
-    return true;
   };
 
   return { handleDistributePayment };

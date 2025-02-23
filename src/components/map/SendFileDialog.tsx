@@ -81,12 +81,9 @@ export const SendFileDialog = ({
     
     setIsLoading(true);
     try {
-      // Process payment for each recipient with COST_PER_RECIPIENT
+      // Process payment for each recipient
       for (const userId of selectedUserIds) {
-        const success = await handleDistributePayment(userId, COST_PER_RECIPIENT);
-        if (!success) {
-          throw new Error('Payment failed');
-        }
+        await handleDistributePayment(userId, COST_PER_RECIPIENT);
       }
 
       // Call onSend with companyName

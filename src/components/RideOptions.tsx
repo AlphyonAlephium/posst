@@ -34,6 +34,7 @@ interface Message {
   feedback?: 'interested' | 'not_interested' | null;
 }
 
+// Validate feedback type
 const isValidFeedback = (feedback: string | null): feedback is 'interested' | 'not_interested' | null => {
   return feedback === 'interested' || feedback === 'not_interested' || null;
 };
@@ -325,7 +326,7 @@ export const RideOptions = () => {
                         <p className="text-xs text-muted-foreground">
                           {new Date(message.created_at).toLocaleString()}
                         </p>
-                        <p className="text-sm">{message.company_name}</p>
+                        <p className="text-sm">{message.file_name}</p>
                       </div>
                     </div>
                     <TooltipProvider>

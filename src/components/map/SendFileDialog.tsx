@@ -30,7 +30,7 @@ interface SendFileDialogProps {
   selectedFile: File | null;
   onFileSelect: (file: File | null) => void;
   onSend: (companyName: string) => void;
-  fileInputRef: React.RefRef<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
 export const SendFileDialog = ({
@@ -83,8 +83,8 @@ export const SendFileDialog = ({
     try {
       // Process payment for each recipient with COST_PER_RECIPIENT
       for (const userId of selectedUserIds) {
-        const paymentResult = await handleDistributePayment(userId, COST_PER_RECIPIENT);
-        if (!paymentResult) {
+        const success = await handleDistributePayment(userId, COST_PER_RECIPIENT);
+        if (!success) {
           throw new Error('Payment failed');
         }
       }

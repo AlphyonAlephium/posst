@@ -81,7 +81,7 @@ export const SendFileDialog = ({
     
     setIsLoading(true);
     try {
-      // Process payment for each recipient
+      // Process payment for each recipient with COST_PER_RECIPIENT
       for (const userId of selectedUserIds) {
         await handleDistributePayment(userId, COST_PER_RECIPIENT);
       }

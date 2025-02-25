@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import type { HotDeal } from "../types";
 
 export const uploadHotDealImage = async (file: File): Promise<string> => {
   // Create a unique file path
@@ -45,6 +46,38 @@ export const createHotDeal = async (
       image_url: imageUrl
     });
 
+  if (error) {
+    throw error;
+  }
+};
+
+export const fetchActiveHotDeals = async (): Promise<HotDeal[]> => {
+  const now = new Date().toISOString();
+  
+  // Fetch deals where the start_time plus duration_hours is greater than the current time
+  const { data, error } = await supabase
+    .from('hot_deals')
+    .select('*')
+    .gte(`start_time`, now)
+    .order('start_time', { ascending: true });
+  
+  if (error) {
+    throw error;
+  }
+  
+  // Filter deals that belong to the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  
+  return (data as HotDeal[]).filter(deal => deal.user_id === user.id);
+};
+
+export const deleteHotDeal = async (dealId: string) => {
+  const { error } = await supabase
+    .from('hot_deals')
+    .delete()
+    .eq('id', dealId);
+  
   if (error) {
     throw error;
   }

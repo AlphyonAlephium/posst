@@ -1,14 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  DialogTabs,
+  DialogTab,
+  DialogTabsContent,
+  DialogTabsList,
+  DialogTabsTrigger
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHotDealForm } from './hot-deals/useHotDealForm';
 import { HotDealForm } from './hot-deals/HotDealForm';
+import { ActiveHotDeals } from './hot-deals/ActiveHotDeals';
 import { MAX_DURATION } from './hot-deals/validators';
 
 interface HotDealDialogProps {
@@ -17,6 +24,8 @@ interface HotDealDialogProps {
 }
 
 export const HotDealDialog = ({ open, onOpenChange }: HotDealDialogProps) => {
+  const [activeTab, setActiveTab] = useState("create");
+
   const {
     title,
     setTitle,
@@ -30,34 +39,50 @@ export const HotDealDialog = ({ open, onOpenChange }: HotDealDialogProps) => {
     fileInputRef,
     handleFileSelect,
     handleSubmit
-  } = useHotDealForm(() => onOpenChange(false));
+  } = useHotDealForm(() => {
+    setActiveTab("manage");
+    // We don't close the dialog after submission to show the user their new active deal
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Create a Hot Deal</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Manage Hot Deals</DialogTitle>
           <DialogDescription>
-            Add a special offer for your customers. Deals can last up to {MAX_DURATION} hours.
+            Create special offers for customers or manage your existing deals.
           </DialogDescription>
         </DialogHeader>
-        
-        <HotDealForm
-          title={title}
-          setTitle={setTitle}
-          description={description}
-          setDescription={setDescription}
-          startTime={startTime}
-          setStartTime={setStartTime}
-          duration={duration}
-          setDuration={setDuration}
-          isLoading={isLoading}
-          fileInputRef={fileInputRef}
-          handleFileSelect={handleFileSelect}
-          handleSubmit={handleSubmit}
-          onCancel={() => onOpenChange(false)}
-          maxDuration={MAX_DURATION}
-        />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="create">Create New Deal</TabsTrigger>
+            <TabsTrigger value="manage">Manage Active Deals</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="create">
+            <HotDealForm
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              startTime={startTime}
+              setStartTime={setStartTime}
+              duration={duration}
+              setDuration={setDuration}
+              isLoading={isLoading}
+              fileInputRef={fileInputRef}
+              handleFileSelect={handleFileSelect}
+              handleSubmit={handleSubmit}
+              onCancel={() => onOpenChange(false)}
+              maxDuration={MAX_DURATION}
+            />
+          </TabsContent>
+
+          <TabsContent value="manage">
+            <ActiveHotDeals onDelete={() => {}} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

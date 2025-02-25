@@ -35,7 +35,7 @@ const Index = () => {
               onClick={() => setHotDealDialogOpen(true)}
             >
               <TagIcon className="mr-2 h-5 w-5" />
-              Add hot deal
+              Manage hot deals
             </Button>
           </div>
         )}

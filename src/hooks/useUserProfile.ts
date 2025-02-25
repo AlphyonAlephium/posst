@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,12 +29,18 @@ export const useUserProfile = () => {
             // For individual accounts, try to get the profile info
             const { data: profile } = await supabase
               .from('profiles')
-              .select('email')
+              .select('email, company_name, is_company')
               .eq('id', user.id)
               .single();
 
-            if (profile?.email) {
-              setUserName(profile.email.split('@')[0]);
+            if (profile) {
+              // If profile has company information, use that
+              if (profile.is_company && profile.company_name) {
+                setIsCompany(true);
+                setUserName(profile.company_name);
+              } else if (profile.email) {
+                setUserName(profile.email.split('@')[0]);
+              }
             }
           }
         }

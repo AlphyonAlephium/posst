@@ -74,18 +74,24 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_name: string | null
           email: string | null
           id: string
+          is_company: boolean | null
           updated_at: string | null
         }
         Insert: {
+          company_name?: string | null
           email?: string | null
           id: string
+          is_company?: boolean | null
           updated_at?: string | null
         }
         Update: {
+          company_name?: string | null
           email?: string | null
           id?: string
+          is_company?: boolean | null
           updated_at?: string | null
         }
         Relationships: []

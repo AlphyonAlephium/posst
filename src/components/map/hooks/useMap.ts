@@ -2,7 +2,7 @@
 import { useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER, MAP_COLORS } from '../types';
+import { Location, LATVIA_CENTER } from '../types';
 
 export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
@@ -10,7 +10,6 @@ export const useMap = () => {
   const updateLocationSource = async () => {
     if (!map.current) return;
 
-    // Get all locations
     const { data: locations, error } = await supabase
       .from('locations')
       .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
@@ -21,51 +20,27 @@ export const useMap = () => {
     }
 
     if (locations) {
-      // Get all user metadata to determine which users are companies
-      const { data: users } = await supabase.auth.admin.listUsers();
-      
-      // Create a map of user IDs to company status
-      const companyUsers = new Map();
-      if (users) {
-        users.users.forEach(user => {
-          const isCompany = user.user_metadata?.is_company || false;
-          companyUsers.set(user.id, isCompany);
-        });
-      }
-
-      // Enhance locations with company status
-      const enhancedLocations = locations.map(location => ({
-        ...location,
-        is_company: companyUsers.get(location.user_id) || false
-      }));
-
-      // Create GeoJSON feature collection
       const geoJson = {
         type: 'FeatureCollection',
-        features: enhancedLocations.map(location => ({
+        features: locations.map(location => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id,
-            is_company: location.is_company
+            user_id: location.user_id
           }
         }))
       };
 
-      // Update the map source
+      // Check if the source already exists before setting data
       const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
       if (source) {
         source.setData(geoJson as any);
       }
       
-      // Return enhanced nearby users data
-      return enhancedLocations.map(loc => ({
-        user_id: loc.user_id!,
-        is_company: loc.is_company
-      }));
+      return locations.map(loc => ({ user_id: loc.user_id! }));
     }
     return [];
   };

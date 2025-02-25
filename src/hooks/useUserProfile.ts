@@ -5,15 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const useUserProfile = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isCompany, setIsCompany] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          setUserId(user.id);
-          
           // Check if user is a company
           const metadata = user.user_metadata;
           setIsCompany(metadata?.is_company || false);
@@ -42,5 +39,5 @@ export const useUserProfile = () => {
     fetchUserProfile();
   }, []);
 
-  return { userName, isCompany, userId };
+  return { userName, isCompany };
 };

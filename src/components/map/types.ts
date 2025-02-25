@@ -3,12 +3,10 @@ export interface Location {
   latitude: number;
   longitude: number;
   user_id: string;
-  is_company?: boolean;
 }
 
 export interface NearbyUser {
   user_id: string;
-  is_company?: boolean;
 }
 
 export const LATVIA_CENTER = {
@@ -26,7 +24,3 @@ export const ALLOWED_FILE_TYPES = [
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-export const MAP_COLORS = {
-  REGULAR_USER: '#FFFFFF', // White for regular users
-  BUSINESS_USER: '#8B5CF6'  // Vivid Purple for business users
-};

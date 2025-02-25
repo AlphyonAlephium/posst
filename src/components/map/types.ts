@@ -3,10 +3,14 @@ export interface Location {
   latitude: number;
   longitude: number;
   user_id: string;
+  is_company?: boolean;
+  company_name?: string;
 }
 
 export interface NearbyUser {
   user_id: string;
+  is_company?: boolean;
+  company_name?: string;
 }
 
 export const LATVIA_CENTER = {
@@ -23,4 +27,3 @@ export const ALLOWED_FILE_TYPES = [
 ];
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-

@@ -10,6 +10,7 @@ export const useMap = () => {
   const updateLocationSource = async () => {
     if (!map.current) return;
 
+    // First get all locations
     const { data: locations, error } = await supabase
       .from('locations')
       .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
@@ -20,16 +21,44 @@ export const useMap = () => {
     }
 
     if (locations) {
+      // Get user details to determine which are companies
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, company_name, is_company');
+
+      // Create a map of user profiles
+      const userProfiles = new Map();
+      if (profiles) {
+        profiles.forEach(profile => {
+          userProfiles.set(profile.id, {
+            is_company: profile.is_company,
+            company_name: profile.company_name
+          });
+        });
+      }
+
+      // Merge location data with company information
+      const locationsWithCompanyInfo = locations.map(location => {
+        const userProfile = userProfiles.get(location.user_id);
+        return {
+          ...location,
+          is_company: userProfile?.is_company || false,
+          company_name: userProfile?.company_name || ''
+        };
+      });
+
       const geoJson = {
         type: 'FeatureCollection',
-        features: locations.map(location => ({
+        features: locationsWithCompanyInfo.map(location => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id
+            user_id: location.user_id,
+            is_company: location.is_company,
+            company_name: location.company_name
           }
         }))
       };
@@ -40,7 +69,11 @@ export const useMap = () => {
         source.setData(geoJson as any);
       }
       
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+      return locationsWithCompanyInfo.map(loc => ({ 
+        user_id: loc.user_id!,
+        is_company: loc.is_company,
+        company_name: loc.company_name
+      }));
     }
     return [];
   };

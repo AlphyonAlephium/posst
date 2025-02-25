@@ -63,22 +63,49 @@ export const useLocation = () => {
         return;
       }
 
-      const { error } = await supabase
+      // Check if user already has a location
+      const { data: existingLocations } = await supabase
         .from('locations')
-        .insert([{
-          latitude,
-          longitude,
-          user_id: user.id
-        }]);
+        .select('id')
+        .eq('user_id', user.id);
 
-      if (error) {
-        throw error;
+      if (existingLocations && existingLocations.length > 0) {
+        // Update existing location
+        const { error } = await supabase
+          .from('locations')
+          .update({
+            latitude,
+            longitude
+          })
+          .eq('user_id', user.id);
+
+        if (error) {
+          throw error;
+        }
+
+        toast({
+          title: "Success",
+          description: "Your location has been updated"
+        });
+      } else {
+        // Insert new location if none exists
+        const { error } = await supabase
+          .from('locations')
+          .insert([{
+            latitude,
+            longitude,
+            user_id: user.id
+          }]);
+
+        if (error) {
+          throw error;
+        }
+
+        toast({
+          title: "Success",
+          description: "Your location has been saved"
+        });
       }
-
-      toast({
-        title: "Success",
-        description: "Your location has been saved"
-      });
 
     } catch (error) {
       console.error('Error setting location:', error);

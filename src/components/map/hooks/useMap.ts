@@ -34,7 +34,12 @@ export const useMap = () => {
         }))
       };
 
-      (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
+      // Check if the source already exists before setting data
+      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+      if (source) {
+        source.setData(geoJson as any);
+      }
+      
       return locations.map(loc => ({ user_id: loc.user_id! }));
     }
     return [];

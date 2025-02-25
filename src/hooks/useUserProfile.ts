@@ -26,4 +26,31 @@ export const useUserProfile = () => {
             // For company accounts, use the company name
             setUserName(metadata.company_name);
             setCompanyName(metadata.company_name);
-          
+          } else if (isServiceAccount && metadata?.service_name) {
+            // For service accounts, use the service name
+            setUserName(metadata.service_name);
+            setServiceName(metadata.service_name);
+          } else if (metadata?.name) {
+            // For regular users, use their name
+            setUserName(metadata.name);
+          } else {
+            // Fallback to email if no name available
+            setUserName(user.email);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  return {
+    userName,
+    isCompany,
+    isService,
+    companyName,
+    serviceName
+  };
+};

@@ -8,36 +8,51 @@ export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
 
   const updateLocationSource = async () => {
-    if (!map.current) return;
-
-    const { data: locations, error } = await supabase
-      .from('locations')
-      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
-
-    if (error) {
-      console.error('Error fetching locations:', error);
-      return;
+    if (!map.current) {
+      console.warn('Map not initialized when trying to update location source');
+      return [];
     }
 
-    if (locations) {
-      const geoJson = {
-        type: 'FeatureCollection',
-        features: locations.map(location => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude]
-          },
-          properties: {
-            user_id: location.user_id
-          }
-        }))
-      };
+    try {
+      const { data: locations, error } = await supabase
+        .from('locations')
+        .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
-      (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData(geoJson as any);
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+      if (error) {
+        console.error('Error fetching locations:', error);
+        return [];
+      }
+
+      if (locations && locations.length > 0) {
+        const geoJson = {
+          type: 'FeatureCollection',
+          features: locations.map(location => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [location.longitude, location.latitude]
+            },
+            properties: {
+              user_id: location.user_id
+            }
+          }))
+        };
+
+        // Check if the source exists before updating it
+        const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+        if (source) {
+          source.setData(geoJson as any);
+        } else {
+          console.warn('Locations source not found in map');
+        }
+        
+        return locations.map(loc => ({ user_id: loc.user_id! }));
+      }
+      return [];
+    } catch (err) {
+      console.error('Error in updateLocationSource:', err);
+      return [];
     }
-    return [];
   };
 
   const initializeMap = async (containerRef: HTMLDivElement) => {

@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,12 +12,24 @@ export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { map, initializeMap, updateLocationSource } = useMap();
+  const mapInitialized = useRef<boolean>(false);
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchNearbyUsers = useCallback(async () => {
+    try {
+      const users = await updateLocationSource();
+      if (users && users.length > 0) {
+        setNearbyUsers(users);
+      }
+    } catch (error) {
+      console.error('Error updating location source:', error);
+    }
+  }, [updateLocationSource]);
 
   const handleMarkerClick = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -138,18 +150,22 @@ export const Map = () => {
     }
   };
 
-  React.useEffect(() => {
-    if (!mapContainer.current) return;
-
+  useEffect(() => {
+    if (!mapContainer.current || mapInitialized.current) return;
+    
+    mapInitialized.current = true;
     const setupMap = async () => {
       try {
         const mapInstance = await initializeMap(mapContainer.current!);
         
         mapInstance.on('load', () => {
+          console.log('Map loaded, setting up layers');
           setupMapLayers(mapInstance);
-          updateLocationSource().then(users => {
-            setNearbyUsers(users);
-          });
+          
+          // Wait for the next tick to ensure layers are set up
+          setTimeout(() => {
+            fetchNearbyUsers().catch(console.error);
+          }, 100);
 
           // Handle clicks on individual points
           mapInstance.on('click', 'unclustered-point', (e) => {
@@ -202,9 +218,7 @@ export const Map = () => {
               table: 'locations' 
             }, 
             () => {
-              updateLocationSource().then(users => {
-                setNearbyUsers(users);
-              });
+              fetchNearbyUsers().catch(console.error);
             }
           )
           .subscribe();
@@ -225,9 +239,11 @@ export const Map = () => {
     setupMap();
 
     return () => {
-      map.current?.remove();
+      if (map.current) {
+        map.current.remove();
+      }
     };
-  }, []);
+  }, [initializeMap, fetchNearbyUsers]);
 
   return (
     <>

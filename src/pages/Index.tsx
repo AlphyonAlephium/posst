@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { LocationCard } from "@/components/LocationCard";
 import { RideOptions } from "@/components/RideOptions";
@@ -6,9 +7,11 @@ import { LocationActions } from "@/components/LocationActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
 import { TagIcon } from "lucide-react";
+import { HotDealDialog } from "@/components/map/HotDealDialog";
 
 const Index = () => {
   const { userName, isCompany } = useUserProfile();
+  const [hotDealDialogOpen, setHotDealDialogOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -28,11 +31,8 @@ const Index = () => {
             <Button
               variant="secondary"
               size="lg"
-              className="w-full"
-              onClick={() => {
-                // TODO: Implement hot deal functionality
-                console.log("Add hot deal clicked");
-              }}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={() => setHotDealDialogOpen(true)}
             >
               <TagIcon className="mr-2 h-5 w-5" />
               Add hot deal
@@ -47,6 +47,11 @@ const Index = () => {
       </main>
 
       <LocationActions />
+      
+      <HotDealDialog 
+        open={hotDealDialogOpen} 
+        onOpenChange={setHotDealDialogOpen} 
+      />
     </div>
   );
 };

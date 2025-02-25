@@ -24,3 +24,14 @@ export const ALLOWED_FILE_TYPES = [
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+export interface HotDeal {
+  id: string;
+  user_id: string;
+  company_name: string;
+  title: string;
+  description: string;
+  start_time: string;
+  duration_hours: number;
+  image_url: string;
+  created_at: string;
+}

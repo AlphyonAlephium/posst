@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const useUserProfile = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isCompany, setIsCompany] = useState<boolean>(false);
+  const [companyName, setCompanyName] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -13,11 +14,13 @@ export const useUserProfile = () => {
         if (user) {
           // Check if user is a company
           const metadata = user.user_metadata;
-          setIsCompany(metadata?.is_company || false);
+          const isCompanyAccount = metadata?.is_company || false;
+          setIsCompany(isCompanyAccount);
           
-          if (metadata?.is_company && metadata?.company_name) {
+          if (isCompanyAccount && metadata?.company_name) {
             // For company accounts, use the company name
             setUserName(metadata.company_name);
+            setCompanyName(metadata.company_name);
           } else {
             // For individual accounts, use the email prefix
             const { data: profile } = await supabase
@@ -39,5 +42,5 @@ export const useUserProfile = () => {
     fetchUserProfile();
   }, []);
 
-  return { userName, isCompany };
+  return { userName, isCompany, companyName };
 };

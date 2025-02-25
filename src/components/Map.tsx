@@ -151,8 +151,16 @@ export const Map = () => {
             setNearbyUsers(users);
           });
 
-          // Handle clicks on individual points
+          // Handle clicks on individual points (regular users)
           mapInstance.on('click', 'unclustered-point', (e) => {
+            if (e.features && e.features[0].properties) {
+              const userId = e.features[0].properties.user_id;
+              handleMarkerClick(userId);
+            }
+          });
+
+          // Handle clicks on business points
+          mapInstance.on('click', 'business-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
               handleMarkerClick(userId);
@@ -178,7 +186,7 @@ export const Map = () => {
             );
           });
 
-          // Change cursor when hovering over points
+          // Change cursor when hovering over various elements
           mapInstance.on('mouseenter', 'clusters', () => {
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
@@ -189,6 +197,12 @@ export const Map = () => {
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
           mapInstance.on('mouseleave', 'unclustered-point', () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          mapInstance.on('mouseenter', 'business-point', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', 'business-point', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
         });

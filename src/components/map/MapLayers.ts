@@ -48,12 +48,78 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     }
   });
 
-  // Add unclustered point layer
+  // Add business point layer
+  map.addLayer({
+    id: 'business-point',
+    type: 'circle',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'is_business'], true]
+    ],
+    paint: {
+      'circle-color': '#7ed957', // Different color for business accounts
+      'circle-radius': 15,
+      'circle-opacity': 0.8
+    }
+  });
+
+  // Add business point label (B)
+  map.addLayer({
+    id: 'business-point-label',
+    type: 'symbol',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'is_business'], true]
+    ],
+    layout: {
+      'text-field': 'B',
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 12
+    },
+    paint: {
+      'text-color': '#FFFFFF'
+    }
+  });
+
+  // Add business name label (only visible when zoomed in)
+  map.addLayer({
+    id: 'business-name',
+    type: 'symbol',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'is_business'], true]
+    ],
+    layout: {
+      'text-field': ['get', 'business_name'],
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 12,
+      'text-offset': [0, 2], // Position below the point
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
+      // Only show name when zoomed in
+      'visibility': 'visible'
+    },
+    paint: {
+      'text-color': '#333333',
+      'text-halo-color': '#FFFFFF',
+      'text-halo-width': 1.5
+    },
+    minzoom: 10 // Only visible when zoomed in
+  });
+
+  // Add unclustered regular user point layer
   map.addLayer({
     id: 'unclustered-point',
     type: 'circle',
     source: 'locations',
-    filter: ['!', ['has', 'point_count']],
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['!=', ['get', 'is_business'], true]
+    ],
     paint: {
       'circle-color': '#FFFFFF',
       'circle-radius': 15,
@@ -61,12 +127,15 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     }
   });
 
-  // Add unclustered point count
+  // Add unclustered regular user point count
   map.addLayer({
     id: 'unclustered-point-count',
     type: 'symbol',
     source: 'locations',
-    filter: ['!', ['has', 'point_count']],
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['!=', ['get', 'is_business'], true]
+    ],
     layout: {
       'text-field': '1',
       'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],

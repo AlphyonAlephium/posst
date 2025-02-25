@@ -19,7 +19,7 @@ export const Map = () => {
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleMarkerClick = async (userId: string, isCompany: boolean) => {
+  const handleMarkerClick = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -155,8 +155,7 @@ export const Map = () => {
           mapInstance.on('click', 'unclustered-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
-              const isCompany = e.features[0].properties.is_company === true;
-              handleMarkerClick(userId, isCompany);
+              handleMarkerClick(userId);
             }
           });
 

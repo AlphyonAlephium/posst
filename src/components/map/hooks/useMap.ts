@@ -8,36 +8,18 @@ export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
 
   const updateLocationSource = async () => {
-    if (!map.current) return [];
+    if (!map.current) return;
 
-    // Fetch locations with user data
     const { data: locations, error } = await supabase
       .from('locations')
       .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
-      return [];
+      return;
     }
 
     if (locations) {
-      // Get user metadata in a separate query for the is_company flag
-      const userIds = locations.map(loc => loc.user_id).filter(Boolean);
-      const { data: users } = await supabase
-        .from('profiles')
-        .select('id, updated_at')
-        .in('id', userIds);
-      
-      // Map of user IDs to company status
-      const userStatusMap = new Map();
-      if (users) {
-        for (const user of users) {
-          // This is a simplified example. In a real app, you'd get this from user metadata
-          // For now, we'll randomly assign some users as companies for demonstration
-          userStatusMap.set(user.id, Math.random() > 0.7);
-        }
-      }
-
       const geoJson = {
         type: 'FeatureCollection',
         features: locations.map(location => ({
@@ -47,8 +29,7 @@ export const useMap = () => {
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id,
-            is_company: userStatusMap.get(location.user_id) || false
+            user_id: location.user_id
           }
         }))
       };
@@ -59,10 +40,7 @@ export const useMap = () => {
         source.setData(geoJson as any);
       }
       
-      return locations.map(loc => ({ 
-        user_id: loc.user_id!,
-        is_company: userStatusMap.get(loc.user_id) || false
-      }));
+      return locations.map(loc => ({ user_id: loc.user_id! }));
     }
     return [];
   };

@@ -14,7 +14,7 @@ export const useMap = () => {
       // Get all locations
       const { data: locations, error } = await supabase
         .from('locations')
-        .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
+        .select('id, latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
       if (error) {
         console.error('Error fetching locations:', error);

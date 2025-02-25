@@ -1,5 +1,6 @@
 
 import mapboxgl from 'mapbox-gl';
+import { AccountType, ACCOUNT_COLORS } from './types';
 
 export const setupMapLayers = (map: mapboxgl.Map) => {
   map.addSource('locations', {
@@ -55,10 +56,10 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     source: 'locations',
     filter: ['all', 
       ['!', ['has', 'point_count']], 
-      ['==', ['get', 'is_business'], true]
+      ['==', ['get', 'account_type'], AccountType.BUSINESS]
     ],
     paint: {
-      'circle-color': '#7ed957', // Different color for business accounts
+      'circle-color': ACCOUNT_COLORS[AccountType.BUSINESS],
       'circle-radius': 15,
       'circle-opacity': 0.8
     }
@@ -71,7 +72,7 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     source: 'locations',
     filter: ['all', 
       ['!', ['has', 'point_count']], 
-      ['==', ['get', 'is_business'], true]
+      ['==', ['get', 'account_type'], AccountType.BUSINESS]
     ],
     layout: {
       'text-field': 'B',
@@ -90,7 +91,7 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     source: 'locations',
     filter: ['all', 
       ['!', ['has', 'point_count']], 
-      ['==', ['get', 'is_business'], true]
+      ['==', ['get', 'account_type'], AccountType.BUSINESS]
     ],
     layout: {
       'text-field': ['get', 'business_name'],
@@ -100,7 +101,68 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
       'text-anchor': 'top',
       'text-allow-overlap': false,
       'text-ignore-placement': false,
-      // Only show name when zoomed in
+      'visibility': 'visible'
+    },
+    paint: {
+      'text-color': '#333333',
+      'text-halo-color': '#FFFFFF',
+      'text-halo-width': 1.5
+    },
+    minzoom: 10 // Only visible when zoomed in
+  });
+  
+  // Add service point layer
+  map.addLayer({
+    id: 'service-point',
+    type: 'circle',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'account_type'], AccountType.SERVICE]
+    ],
+    paint: {
+      'circle-color': ACCOUNT_COLORS[AccountType.SERVICE],
+      'circle-radius': 15,
+      'circle-opacity': 0.8
+    }
+  });
+
+  // Add service point label (S)
+  map.addLayer({
+    id: 'service-point-label',
+    type: 'symbol',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'account_type'], AccountType.SERVICE]
+    ],
+    layout: {
+      'text-field': 'S',
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 12
+    },
+    paint: {
+      'text-color': '#FFFFFF'
+    }
+  });
+
+  // Add service name label (only visible when zoomed in)
+  map.addLayer({
+    id: 'service-name',
+    type: 'symbol',
+    source: 'locations',
+    filter: ['all', 
+      ['!', ['has', 'point_count']], 
+      ['==', ['get', 'account_type'], AccountType.SERVICE]
+    ],
+    layout: {
+      'text-field': ['get', 'service_name'],
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 12,
+      'text-offset': [0, 2], // Position below the point
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
       'visibility': 'visible'
     },
     paint: {
@@ -118,10 +180,10 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     source: 'locations',
     filter: ['all', 
       ['!', ['has', 'point_count']], 
-      ['!=', ['get', 'is_business'], true]
+      ['==', ['get', 'account_type'], AccountType.USER]
     ],
     paint: {
-      'circle-color': '#FFFFFF',
+      'circle-color': ACCOUNT_COLORS[AccountType.USER],
       'circle-radius': 15,
       'circle-opacity': 0.8
     }
@@ -134,7 +196,7 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     source: 'locations',
     filter: ['all', 
       ['!', ['has', 'point_count']], 
-      ['!=', ['get', 'is_business'], true]
+      ['==', ['get', 'account_type'], AccountType.USER]
     ],
     layout: {
       'text-field': '1',

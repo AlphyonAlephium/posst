@@ -7,11 +7,12 @@ import { SendFileDialog } from './map/SendFileDialog';
 import { NearbyUser } from './map/types';
 import { useMap } from './map/hooks/useMap';
 import { setupMapLayers } from './map/MapLayers';
+import { MapFilter } from './map/MapFilter';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { map, initializeMap, updateLocationSource } = useMap();
+  const { map, filters, updateFilters, initializeMap, updateLocationSource } = useMap();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -166,6 +167,14 @@ export const Map = () => {
               handleMarkerClick(userId);
             }
           });
+          
+          // Handle clicks on service points
+          mapInstance.on('click', 'service-point', (e) => {
+            if (e.features && e.features[0].properties) {
+              const userId = e.features[0].properties.user_id;
+              handleMarkerClick(userId);
+            }
+          });
 
           // Handle clicks on clusters
           mapInstance.on('click', 'clusters', (e) => {
@@ -203,6 +212,12 @@ export const Map = () => {
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
           mapInstance.on('mouseleave', 'business-point', () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          mapInstance.on('mouseenter', 'service-point', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', 'service-point', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
         });
@@ -247,6 +262,7 @@ export const Map = () => {
     <>
       <div className="relative w-full h-[300px] rounded-lg overflow-hidden">
         <div ref={mapContainer} className="absolute inset-0" />
+        <MapFilter filters={filters} onFilterChange={updateFilters} />
       </div>
 
       <SendFileDialog

@@ -1,11 +1,50 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER } from '../types';
+import { Location, LATVIA_CENTER, AccountType, MapFilters, DEFAULT_FILTERS } from '../types';
 
 export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
+  const [filters, setFilters] = useState<MapFilters>(DEFAULT_FILTERS);
+
+  const updateFilters = (newFilters: Partial<MapFilters>) => {
+    setFilters(prev => {
+      const updated = { ...prev, ...newFilters };
+      
+      // Update layer visibility based on filters
+      if (map.current) {
+        // Handle business layers visibility
+        ['business-point', 'business-point-label', 'business-name'].forEach(layerId => {
+          map.current?.setLayoutProperty(
+            layerId, 
+            'visibility', 
+            updated.showBusinesses ? 'visible' : 'none'
+          );
+        });
+        
+        // Handle service layers visibility
+        ['service-point', 'service-point-label', 'service-name'].forEach(layerId => {
+          map.current?.setLayoutProperty(
+            layerId, 
+            'visibility', 
+            updated.showServices ? 'visible' : 'none'
+          );
+        });
+        
+        // Handle regular user layers visibility
+        ['unclustered-point', 'unclustered-point-count'].forEach(layerId => {
+          map.current?.setLayoutProperty(
+            layerId, 
+            'visibility', 
+            updated.showUsers ? 'visible' : 'none'
+          );
+        });
+      }
+      
+      return updated;
+    });
+  };
 
   const updateLocationSource = async () => {
     if (!map.current) return [];
@@ -14,7 +53,7 @@ export const useMap = () => {
       // Get all locations
       const { data: locations, error } = await supabase
         .from('locations')
-        .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
+        .select('id, latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
       if (error) {
         console.error('Error fetching locations:', error);
@@ -25,7 +64,7 @@ export const useMap = () => {
         return [];
       }
 
-      // Get user metadata to identify business accounts
+      // Get user metadata to identify account types
       const userIds = locations.map(loc => loc.user_id).filter(Boolean) as string[];
       
       const { data: users, error: userError } = await supabase.auth.admin.listUsers({
@@ -40,27 +79,38 @@ export const useMap = () => {
         currentUserOnly = data.user;
       }
 
-      // Convert locations to GeoJSON features with business info
+      // Convert locations to GeoJSON features with account type info
       const features = await Promise.all(locations.map(async (location) => {
         // Default values
-        let isBusinessAccount = false;
+        let accountType = AccountType.USER;
         let businessName = '';
+        let serviceName = '';
         
         if (location.user_id) {
-          // Try to find if this is a business account
+          // Try to find the account type
           
           // If we have admin access to all users
           if (users && users.users) {
             const userInfo = users.users.find(u => u.id === location.user_id);
             if (userInfo && userInfo.user_metadata) {
-              isBusinessAccount = !!userInfo.user_metadata.is_company;
-              businessName = userInfo.user_metadata.company_name || '';
+              if (userInfo.user_metadata.is_company) {
+                accountType = AccountType.BUSINESS;
+                businessName = userInfo.user_metadata.company_name || '';
+              } else if (userInfo.user_metadata.is_service) {
+                accountType = AccountType.SERVICE;
+                serviceName = userInfo.user_metadata.service_name || '';
+              }
             }
           } 
           // If we only have access to current user
           else if (currentUserOnly && currentUserOnly.id === location.user_id) {
-            isBusinessAccount = !!currentUserOnly.user_metadata?.is_company;
-            businessName = currentUserOnly.user_metadata?.company_name || '';
+            if (currentUserOnly.user_metadata?.is_company) {
+              accountType = AccountType.BUSINESS;
+              businessName = currentUserOnly.user_metadata?.company_name || '';
+            } else if (currentUserOnly.user_metadata?.is_service) {
+              accountType = AccountType.SERVICE;
+              serviceName = currentUserOnly.user_metadata?.service_name || '';
+            }
           }
           // Fallback: Query profiles table for the specific user
           else {
@@ -79,8 +129,13 @@ export const useMap = () => {
                 );
                 
                 if (user && user.user_metadata) {
-                  isBusinessAccount = !!user.user_metadata.is_company;
-                  businessName = user.user_metadata.company_name || '';
+                  if (user.user_metadata.is_company) {
+                    accountType = AccountType.BUSINESS;
+                    businessName = user.user_metadata.company_name || '';
+                  } else if (user.user_metadata.is_service) {
+                    accountType = AccountType.SERVICE;
+                    serviceName = user.user_metadata.service_name || '';
+                  }
                 }
               }
             } catch (err) {
@@ -97,8 +152,12 @@ export const useMap = () => {
           },
           properties: {
             user_id: location.user_id,
-            is_business: isBusinessAccount,
-            business_name: businessName
+            account_type: accountType,
+            business_name: businessName,
+            service_name: serviceName,
+            display_name: accountType === AccountType.BUSINESS 
+              ? businessName 
+              : (accountType === AccountType.SERVICE ? serviceName : '')
           }
         };
       }));
@@ -152,6 +211,8 @@ export const useMap = () => {
 
   return {
     map,
+    filters,
+    updateFilters,
     initializeMap,
     updateLocationSource
   };

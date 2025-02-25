@@ -37,17 +37,25 @@ export const useMap = () => {
     const { data: activeDeals, error: dealsError } = await supabase
       .from('hot_deals')
       .select('*')
-      .lt('start_time', now)
-      .raw(`start_time + (duration_hours * interval '1 hour') > ?`, [now]);
+      .lte('start_time', now) // Deal has started
+      .gte(`start_time`, new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()); // Deal is not older than 5 hours
 
     if (dealsError) {
       console.error('Error fetching hot deals:', dealsError);
       return [];
     }
 
+    // Filter deals that are still active based on their duration
+    const currentTime = Date.now();
+    const activeFilteredDeals = activeDeals?.filter(deal => {
+      const startTime = new Date(deal.start_time).getTime();
+      const endTime = startTime + (deal.duration_hours * 60 * 60 * 1000);
+      return currentTime <= endTime;
+    });
+
     // Map to track users with active deals
     const activeDealsMap = new Map();
-    activeDeals?.forEach(deal => {
+    activeFilteredDeals?.forEach(deal => {
       activeDealsMap.set(deal.user_id, deal);
     });
 

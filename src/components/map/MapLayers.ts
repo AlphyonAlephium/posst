@@ -48,14 +48,19 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     }
   });
 
-  // Add unclustered point layer
+  // Add unclustered point layer with conditional coloring based on user type
   map.addLayer({
     id: 'unclustered-point',
     type: 'circle',
     source: 'locations',
     filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-color': '#FFFFFF',
+      'circle-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        '#8B5CF6', // Vivid purple for business accounts
+        '#FFFFFF' // White for regular users
+      ],
       'circle-radius': 15,
       'circle-opacity': 0.8
     }

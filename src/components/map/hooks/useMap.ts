@@ -8,15 +8,23 @@ export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
 
   const updateLocationSource = async () => {
-    if (!map.current) return;
+    if (!map.current) return [];
 
+    // Fetch locations with user data
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
+      .select(`
+        latitude, 
+        longitude, 
+        user_id,
+        users:user_id (
+          raw_user_meta_data
+        )
+      `) as { data: (Location & { users: { raw_user_meta_data: any } })[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
-      return;
+      return [];
     }
 
     if (locations) {
@@ -29,7 +37,8 @@ export const useMap = () => {
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id
+            user_id: location.user_id,
+            is_company: location.users?.raw_user_meta_data?.is_company || false
           }
         }))
       };
@@ -40,7 +49,10 @@ export const useMap = () => {
         source.setData(geoJson as any);
       }
       
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+      return locations.map(loc => ({ 
+        user_id: loc.user_id!,
+        is_company: loc.users?.raw_user_meta_data?.is_company || false
+      }));
     }
     return [];
   };

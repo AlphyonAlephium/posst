@@ -1,5 +1,6 @@
 
 import mapboxgl from 'mapbox-gl';
+import { MAP_COLORS } from './types';
 
 export const setupMapLayers = (map: mapboxgl.Map) => {
   map.addSource('locations', {
@@ -48,25 +49,50 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     }
   });
 
-  // Add unclustered point layer
+  // Add unclustered point layer for regular users
   map.addLayer({
-    id: 'unclustered-point',
+    id: 'unclustered-point-regular',
     type: 'circle',
     source: 'locations',
-    filter: ['!', ['has', 'point_count']],
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['==', ['get', 'is_company'], false]
+    ],
     paint: {
-      'circle-color': '#FFFFFF',
+      'circle-color': MAP_COLORS.REGULAR_USER,
       'circle-radius': 15,
       'circle-opacity': 0.8
     }
   });
 
-  // Add unclustered point count
+  // Add unclustered point layer for business users
   map.addLayer({
-    id: 'unclustered-point-count',
+    id: 'unclustered-point-business',
+    type: 'circle',
+    source: 'locations',
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['==', ['get', 'is_company'], true]
+    ],
+    paint: {
+      'circle-color': MAP_COLORS.BUSINESS_USER,
+      'circle-radius': 15,
+      'circle-opacity': 0.8
+    }
+  });
+
+  // Add unclustered point count for regular users
+  map.addLayer({
+    id: 'unclustered-point-count-regular',
     type: 'symbol',
     source: 'locations',
-    filter: ['!', ['has', 'point_count']],
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['==', ['get', 'is_company'], false]
+    ],
     layout: {
       'text-field': '1',
       'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
@@ -74,6 +100,26 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     },
     paint: {
       'text-color': '#7ed957'
+    }
+  });
+
+  // Add unclustered point count for business users
+  map.addLayer({
+    id: 'unclustered-point-count-business',
+    type: 'symbol',
+    source: 'locations',
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['==', ['get', 'is_company'], true]
+    ],
+    layout: {
+      'text-field': 'B',
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 12
+    },
+    paint: {
+      'text-color': '#FFFFFF'
     }
   });
 };

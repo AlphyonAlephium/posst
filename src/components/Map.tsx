@@ -151,8 +151,16 @@ export const Map = () => {
             setNearbyUsers(users);
           });
 
-          // Handle clicks on individual points
-          mapInstance.on('click', 'unclustered-point', (e) => {
+          // Handle clicks on regular user points
+          mapInstance.on('click', 'unclustered-point-regular', (e) => {
+            if (e.features && e.features[0].properties) {
+              const userId = e.features[0].properties.user_id;
+              handleMarkerClick(userId);
+            }
+          });
+
+          // Handle clicks on business user points
+          mapInstance.on('click', 'unclustered-point-business', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
               handleMarkerClick(userId);
@@ -185,10 +193,16 @@ export const Map = () => {
           mapInstance.on('mouseleave', 'clusters', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
-          mapInstance.on('mouseenter', 'unclustered-point', () => {
+          mapInstance.on('mouseenter', 'unclustered-point-regular', () => {
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
-          mapInstance.on('mouseleave', 'unclustered-point', () => {
+          mapInstance.on('mouseleave', 'unclustered-point-regular', () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          mapInstance.on('mouseenter', 'unclustered-point-business', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', 'unclustered-point-business', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
         });

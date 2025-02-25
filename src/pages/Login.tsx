@@ -1,5 +1,5 @@
 
-import { Auth } from "@/components/Auth";
+import { Auth } from "@/components/auth/Auth";
 
 const Login = () => {
   return (

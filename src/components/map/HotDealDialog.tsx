@@ -62,7 +62,7 @@ export const HotDealDialog = ({ open, onOpenChange }: HotDealDialogProps) => {
       // Create a unique file path
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `hot-deals/${fileName}`;
+      const filePath = `${fileName}`;
 
       // Upload the image file
       const { error: uploadError } = await supabase.storage

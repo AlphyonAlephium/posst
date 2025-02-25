@@ -8,41 +8,94 @@ export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
 
   const updateLocationSource = async () => {
-    if (!map.current) return;
+    if (!map.current) return [];
 
+    // Get locations
     const { data: locations, error } = await supabase
       .from('locations')
       .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
-      return;
+      return [];
     }
 
-    if (locations) {
-      const geoJson = {
-        type: 'FeatureCollection',
-        features: locations.map(location => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude]
-          },
-          properties: {
-            user_id: location.user_id
-          }
-        }))
+    if (!locations) return [];
+
+    // Get user profiles to identify companies
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, is_company, company_name');
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      return [];
+    }
+
+    // Get active hot deals
+    const now = new Date().toISOString();
+    const { data: activeDeals, error: dealsError } = await supabase
+      .from('hot_deals')
+      .select('*')
+      .lt('start_time', now)
+      .raw(`start_time + (duration_hours * interval '1 hour') > ?`, [now]);
+
+    if (dealsError) {
+      console.error('Error fetching hot deals:', dealsError);
+      return [];
+    }
+
+    // Map to track users with active deals
+    const activeDealsMap = new Map();
+    activeDeals?.forEach(deal => {
+      activeDealsMap.set(deal.user_id, deal);
+    });
+
+    // Convert to profile lookup map
+    const profilesMap = new Map();
+    profiles?.forEach(profile => {
+      profilesMap.set(profile.id, profile);
+    });
+
+    // Create GeoJSON features with company and active deal information
+    const features = locations.map(location => {
+      const profile = profilesMap.get(location.user_id);
+      const hasActiveDeal = activeDealsMap.has(location.user_id);
+      const activeDeal = activeDealsMap.get(location.user_id);
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [location.longitude, location.latitude]
+        },
+        properties: {
+          user_id: location.user_id,
+          is_company: profile?.is_company || false,
+          company_name: profile?.company_name || '',
+          has_active_deal: hasActiveDeal,
+          deal_id: activeDeal?.id || null,
+          deal_title: activeDeal?.title || null,
+          deal_description: activeDeal?.description || null,
+          deal_image_url: activeDeal?.image_url || null,
+          deal_start_time: activeDeal?.start_time || null,
+          deal_duration_hours: activeDeal?.duration_hours || null
+        }
       };
+    });
 
-      // Check if the source already exists before setting data
-      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
-      if (source) {
-        source.setData(geoJson as any);
-      }
-      
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+    const geoJson = {
+      type: 'FeatureCollection',
+      features
+    };
+
+    // Update source data if exists
+    const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+    if (source) {
+      source.setData(geoJson as any);
     }
-    return [];
+    
+    return locations.map(loc => ({ user_id: loc.user_id! }));
   };
 
   const initializeMap = async (containerRef: HTMLDivElement) => {

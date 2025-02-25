@@ -35,3 +35,8 @@ export interface HotDeal {
   image_url: string;
   created_at: string;
 }
+
+export interface HotDealPopupInfo {
+  deal: HotDeal;
+  coordinates: [number, number];
+}

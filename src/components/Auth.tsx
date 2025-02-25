@@ -8,11 +8,22 @@ import { Label } from "@/components/ui/label";
 import { FcGoogle } from 'react-icons/fc';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [isCompanyAccount, setIsCompanyAccount] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,23 +33,46 @@ export const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = isLogin
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message,
+      if (isLogin) {
+        // Login flow
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password 
         });
-      } else {
-        if (isLogin) {
+
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
+        } else {
           toast({
             title: "Welcome back!",
             description: "You have successfully signed in.",
           });
           navigate("/");
+        }
+      } else {
+        // Registration flow
+        const metadata = isCompanyAccount 
+          ? { company_name: companyName, is_company: true } 
+          : { is_company: false };
+          
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: metadata
+          }
+        });
+
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message,
+          });
         } else {
           if (data.user?.identities?.length === 0) {
             toast({
@@ -108,7 +142,41 @@ export const Auth = () => {
         </p>
       </div>
 
+      {!isLogin && (
+        <Tabs defaultValue="individual" className="mb-6" onValueChange={(value) => setIsCompanyAccount(value === "company")}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="individual">Individual</TabsTrigger>
+            <TabsTrigger value="company">Company/Service</TabsTrigger>
+          </TabsList>
+          <TabsContent value="individual">
+            <p className="text-sm text-muted-foreground mb-4">
+              Register as an individual user to send and receive files.
+            </p>
+          </TabsContent>
+          <TabsContent value="company">
+            <p className="text-sm text-muted-foreground mb-4">
+              Register as a company or service provider to manage your business presence.
+            </p>
+          </TabsContent>
+        </Tabs>
+      )}
+
       <form onSubmit={handleEmailAuth} className="space-y-4">
+        {!isLogin && isCompanyAccount && (
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company/Service Name</Label>
+            <Input
+              id="companyName"
+              type="text"
+              placeholder="Enter your company or service name"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required={isCompanyAccount}
+              disabled={loading}
+            />
+          </div>
+        )}
+        
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -137,7 +205,7 @@ export const Auth = () => {
         <Button 
           type="submit" 
           className="w-full gradient-button text-white"
-          disabled={loading}
+          disabled={loading || (!companyName && isCompanyAccount && !isLogin)}
         >
           {loading ? "Loading..." : isLogin ? "Sign in" : "Create account"}
         </Button>
@@ -180,4 +248,3 @@ export const Auth = () => {
     </Card>
   );
 };
-

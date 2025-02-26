@@ -90,10 +90,9 @@ export const useTreasures = () => {
       // Update user's wallet balance with the reward
       const treasureToFind = treasures.find(t => t.id === treasureId);
       if (treasureToFind) {
-        await supabase.rpc('distribute_payment', { 
-          sender_id: '00000000-0000-0000-0000-000000000000', // Admin account
-          receiver_id: user.id,
-          total_amount: treasureToFind.reward_amount 
+        await supabase.rpc('add_to_wallet', { 
+          user_id: user.id, 
+          amount: treasureToFind.reward_amount 
         });
       }
 

@@ -63,7 +63,7 @@ export const useMap = () => {
       
       // For each location, fetch the related profile and business_profile data
       const nearbyUsers: NearbyUser[] = [];
-      const features: mapboxgl.GeoJSONFeature[] = [];
+      const features: GeoJSON.Feature[] = [];
       
       // Process each location
       for (const location of locationsData) {
@@ -96,7 +96,7 @@ export const useMap = () => {
           is_company: isCompany
         });
         
-        // Add to GeoJSON features
+        // Add to GeoJSON features - use proper GeoJSON.Feature type
         features.push({
           type: 'Feature',
           geometry: {
@@ -109,7 +109,7 @@ export const useMap = () => {
             has_hot_deal: hasHotDeal,
             company_name: companyName
           }
-        } as mapboxgl.GeoJSONFeature);
+        });
       }
       
       // Update the map source if it exists

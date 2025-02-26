@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,7 +159,7 @@ const BusinessProfile = () => {
   };
 
   // Fetch existing profile data on component mount
-  useState(() => {
+  useEffect(() => {
     const fetchBusinessProfile = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();

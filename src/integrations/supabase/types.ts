@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      business_profiles: {
+        Row: {
+          address: string | null
+          business_name: string
+          cover_image_url: string | null
+          created_at: string
+          delivery_available: boolean | null
+          description: string | null
+          id: number
+          logo_url: string | null
+          open_hours: string | null
+          phone_number: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          cover_image_url?: string | null
+          created_at?: string
+          delivery_available?: boolean | null
+          description?: string | null
+          id?: number
+          logo_url?: string | null
+          open_hours?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          cover_image_url?: string | null
+          created_at?: string
+          delivery_available?: boolean | null
+          description?: string | null
+          id?: number
+          logo_url?: string | null
+          open_hours?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       hot_deals: {
         Row: {
           company_name: string

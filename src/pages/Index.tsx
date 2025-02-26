@@ -8,6 +8,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
 import { TagIcon, Home, Search, Heart, User, Plus } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
+import { RecentActivityTimeline } from "@/components/map/recent-activity/RecentActivityTimeline";
 
 const Index = () => {
   const { userName, isCompany } = useUserProfile();
@@ -84,27 +85,7 @@ const Index = () => {
           {/* Right sidebar - only visible on large screens */}
           <div className="hidden lg:block lg:col-span-3 2xl:col-span-2">
             <div className="sticky top-20 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-              <h2 className="font-semibold text-lg mb-3">Recent Activity</h2>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">New users nearby</p>
-                    <p className="text-xs text-gray-500">5 minutes ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <Heart className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">New hot deal available</p>
-                    <p className="text-xs text-gray-500">20 minutes ago</p>
-                  </div>
-                </div>
-              </div>
+              <RecentActivityTimeline />
             </div>
           </div>
         </div>

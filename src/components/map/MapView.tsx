@@ -13,7 +13,7 @@ export const MapView: React.FC<MapViewProps> = ({
   onCenterLocation 
 }) => {
   return (
-    <div className="relative w-full h-[300px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
       <div ref={mapContainerRef} className="absolute inset-0" />
       <div className="absolute top-2 right-2 z-10">
         <Button 

@@ -9,40 +9,60 @@ export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const toast = useToast();
 
-  const updateLocationSource = async () => {
-    if (!map.current) return;
+  const updateLocationSource = async (filterType: 'all' | 'businesses' | 'users' = 'all') => {
+    if (!map.current) return [];
 
-    const { data: locations, error } = await supabase
-      .from('locations')
-      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
+    try {
+      let query = supabase
+        .from('locations')
+        .select('locations.latitude, locations.longitude, locations.user_id, profiles.is_company');
 
-    if (error) {
-      console.error('Error fetching locations:', error);
-      return;
-    }
+      // Join with profiles to get is_company status
+      query = query.join('profiles', 'locations.user_id', 'eq', 'profiles.id');
 
-    if (locations) {
-      const geoJson = {
-        type: 'FeatureCollection',
-        features: locations.map(location => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude]
-          },
-          properties: {
-            user_id: location.user_id
-          }
-        }))
-      };
-
-      // Check if the source already exists before setting data
-      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
-      if (source) {
-        source.setData(geoJson as any);
+      // Apply filter if needed
+      if (filterType === 'businesses') {
+        query = query.eq('profiles.is_company', true);
+      } else if (filterType === 'users') {
+        query = query.eq('profiles.is_company', false);
       }
-      
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching locations:', error);
+        return [];
+      }
+
+      if (data && data.length > 0) {
+        const geoJson = {
+          type: 'FeatureCollection',
+          features: data.map(location => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [location.longitude, location.latitude]
+            },
+            properties: {
+              user_id: location.user_id,
+              is_company: location.is_company
+            }
+          }))
+        };
+
+        // Check if the source already exists before setting data
+        const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+        if (source) {
+          source.setData(geoJson as any);
+        }
+        
+        return data.map(loc => ({ 
+          user_id: loc.user_id,
+          is_company: loc.is_company
+        }));
+      }
+    } catch (error) {
+      console.error('Error in updateLocationSource:', error);
     }
     return [];
   };

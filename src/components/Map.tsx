@@ -12,6 +12,7 @@ import { SendFileDialog } from './map/SendFileDialog';
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
+  const [filterType, setFilterType] = useState<'all' | 'businesses' | 'users'>('all');
   
   const { map, initializeMap, updateLocationSource, centerOnUserLocation } = useMap();
   const { 
@@ -36,18 +37,25 @@ export const Map = () => {
     initializeMap,
     updateLocationSource,
     setNearbyUsers,
-    handleMarkerClick
+    handleMarkerClick,
+    filterType
   );
 
   const handleCenterOnUserLocation = () => {
     centerOnUserLocation();
   };
 
+  const handleFilterChange = (type: 'all' | 'businesses' | 'users') => {
+    setFilterType(type);
+  };
+
   return (
     <>
       <MapView 
         mapContainerRef={mapContainer} 
-        onCenterLocation={handleCenterOnUserLocation} 
+        onCenterLocation={handleCenterOnUserLocation}
+        filterType={filterType}
+        onFilterChange={handleFilterChange} 
       />
 
       <SendFileDialog

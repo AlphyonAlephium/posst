@@ -10,12 +10,8 @@ export const LocationCard = () => {
         
         <div className="p-4 lg:p-6 space-y-2">
           <div className="lg:flex lg:space-x-4">
-            <div className="lg:flex-1 mb-3 lg:mb-0">
-              <LocationInput type="pickup" placeholder="Enter pickup location" />
-            </div>
-            <div className="lg:flex-1">
-              <LocationInput type="destination" placeholder="Where to?" />
-            </div>
+            
+            
           </div>
           
           <div className="text-center p-4 bg-gray-50 rounded-lg mt-3">

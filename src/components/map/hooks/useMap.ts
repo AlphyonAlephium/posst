@@ -2,97 +2,49 @@
 import { useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER, LocationWithProfile } from '../types';
+import { Location, LATVIA_CENTER } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const toast = useToast();
 
-  const updateLocationSource = async (filterType: 'all' | 'businesses' | 'users' = 'all') => {
-    if (!map.current) return [];
+  const updateLocationSource = async () => {
+    if (!map.current) return;
 
-    try {
-      // Using Supabase query builder instead of raw SQL
-      let locationsQuery = supabase
-        .from('locations')
-        .select('latitude, longitude, user_id');
+    const { data: locations, error } = await supabase
+      .from('locations')
+      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
-      const { data: locationsData, error: locationsError } = await locationsQuery;
+    if (error) {
+      console.error('Error fetching locations:', error);
+      return;
+    }
 
-      if (locationsError) {
-        console.error('Error fetching locations:', locationsError);
-        return [];
-      }
+    if (locations) {
+      const geoJson = {
+        type: 'FeatureCollection',
+        features: locations.map(location => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [location.longitude, location.latitude]
+          },
+          properties: {
+            user_id: location.user_id
+          }
+        }))
+      };
 
-      // Early return if no locations
-      if (!locationsData || locationsData.length === 0) return [];
-
-      // Get all profile information in one go
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, is_company');
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        return [];
-      }
-
-      // Create a map for quick profile lookup
-      const profilesMap = new Map();
-      profilesData?.forEach(profile => {
-        profilesMap.set(profile.id, { is_company: profile.is_company });
-      });
-
-      // Merge data and apply filters
-      const mergedData = locationsData.map(location => {
-        const profile = profilesMap.get(location.user_id) || { is_company: false };
-        return {
-          ...location,
-          is_company: profile.is_company
-        };
-      });
-
-      // Apply filter
-      const filteredData = filterType === 'all' 
-        ? mergedData
-        : filterType === 'businesses'
-          ? mergedData.filter(item => item.is_company)
-          : mergedData.filter(item => !item.is_company);
-
-      if (filteredData && filteredData.length > 0) {
-        const geoJson = {
-          type: 'FeatureCollection',
-          features: filteredData.map(location => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [location.longitude, location.latitude]
-            },
-            properties: {
-              user_id: location.user_id,
-              is_company: location.is_company
-            }
-          }))
-        };
-
-        // Check if the source already exists before setting data
-        const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
-        if (source) {
-          source.setData(geoJson as any);
-        }
-        
-        return filteredData.map(loc => ({ 
-          user_id: loc.user_id,
-          is_company: loc.is_company
-        }));
+      // Check if the source already exists before setting data
+      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+      if (source) {
+        source.setData(geoJson as any);
       }
       
-      return [];
-    } catch (error) {
-      console.error('Error in updateLocationSource:', error);
-      return [];
+      return locations.map(loc => ({ user_id: loc.user_id! }));
     }
+    return [];
   };
 
   const centerOnUserLocation = async () => {
@@ -116,7 +68,7 @@ export const useMap = () => {
         .from('locations')
         .select('latitude, longitude')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error || !userLocation) {
         // If no stored location, try to get current location

@@ -9,10 +9,9 @@ export const useMapSetup = (
   map: React.MutableRefObject<mapboxgl.Map | null>,
   mapContainer: React.RefObject<HTMLDivElement>,
   initializeMap: (containerRef: HTMLDivElement) => Promise<mapboxgl.Map>,
-  updateLocationSource: (filterType?: 'all' | 'businesses' | 'users') => Promise<NearbyUser[]>,
+  updateLocationSource: () => Promise<NearbyUser[]>,
   setNearbyUsers: (users: NearbyUser[]) => void,
-  handleMarkerClick: (userId: string) => void,
-  filterType: 'all' | 'businesses' | 'users' = 'all'
+  handleMarkerClick: (userId: string) => void
 ) => {
   const { toast } = useToast();
 
@@ -80,7 +79,7 @@ export const useMapSetup = (
               table: 'locations' 
             }, 
             () => {
-              updateLocationSource(filterType).then(users => {
+              updateLocationSource().then(users => {
                 setNearbyUsers(users);
               });
             }
@@ -106,13 +105,4 @@ export const useMapSetup = (
       map.current?.remove();
     };
   }, []);
-
-  // Add useEffect for filterType changes
-  useEffect(() => {
-    if (map.current && map.current.loaded()) {
-      updateLocationSource(filterType).then(users => {
-        setNearbyUsers(users);
-      });
-    }
-  }, [filterType]);
 };

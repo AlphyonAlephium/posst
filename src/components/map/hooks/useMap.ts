@@ -15,7 +15,7 @@ export const useMap = (filter?: MapFilter) => {
 
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('latitude, longitude, user_id, is_company') as { data: Location[] | null, error: any };
+      .select('latitude, longitude, user_id, is_company');
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -23,21 +23,35 @@ export const useMap = (filter?: MapFilter) => {
     }
 
     if (locations) {
-      setLastLocations(locations);
+      // Cast to ensure TypeScript recognizes the returned data format
+      const typedLocations = locations as Location[];
+      setLastLocations(typedLocations);
 
       // Apply filters if they exist
-      let filteredLocations = [...locations];
+      let filteredLocations = [...typedLocations];
+      
       if (filter) {
-        filteredLocations = locations.filter(location => {
-          if (location.is_company) {
-            return filter.showBusinesses;
+        console.log('Applying filter, before:', filteredLocations.length);
+        
+        filteredLocations = typedLocations.filter(location => {
+          // Handle null is_company as regular user
+          const isCompany = location.is_company === true;
+          
+          if (isCompany) {
+            const shouldShow = filter.showBusinesses;
+            console.log(`Business ${location.user_id}: ${shouldShow ? 'show' : 'hide'}`);
+            return shouldShow;
           } else {
-            return filter.showUsers;
+            const shouldShow = filter.showUsers;
+            console.log(`Regular user ${location.user_id}: ${shouldShow ? 'show' : 'hide'}`);
+            return shouldShow;
           }
         });
+        
+        console.log('After filtering:', filteredLocations.length);
       }
 
-      console.log('Filtered locations:', filteredLocations.length, 'Total locations:', locations.length);
+      console.log('Filtered locations:', filteredLocations.length, 'Total locations:', typedLocations.length);
       console.log('Filter settings:', filter);
 
       const geoJson = {
@@ -50,7 +64,7 @@ export const useMap = (filter?: MapFilter) => {
           },
           properties: {
             user_id: location.user_id,
-            is_company: location.is_company || false
+            is_company: location.is_company === true
           }
         }))
       };
@@ -60,9 +74,9 @@ export const useMap = (filter?: MapFilter) => {
         source.setData(geoJson as any);
       }
       
-      return locations.map(loc => ({ 
+      return typedLocations.map(loc => ({ 
         user_id: loc.user_id,
-        is_company: loc.is_company || false 
+        is_company: loc.is_company === true
       }));
     }
     return [];
@@ -70,9 +84,11 @@ export const useMap = (filter?: MapFilter) => {
 
   useEffect(() => {
     if (filter && map.current && lastLocations.length > 0) {
-      // Apply filters
+      // Apply filters when filter changes
       const filteredLocations = lastLocations.filter(location => {
-        if (location.is_company) {
+        const isCompany = location.is_company === true;
+        
+        if (isCompany) {
           return filter.showBusinesses;
         } else {
           return filter.showUsers;
@@ -92,7 +108,7 @@ export const useMap = (filter?: MapFilter) => {
           },
           properties: {
             user_id: location.user_id,
-            is_company: location.is_company || false
+            is_company: location.is_company === true
           }
         }))
       };

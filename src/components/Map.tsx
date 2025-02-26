@@ -51,7 +51,11 @@ export const Map = () => {
 
   const handleFilterChange = (key: keyof MapFilter) => (checked: boolean) => {
     console.log(`Setting ${key} filter to: ${checked}`);
-    setFilter(prev => ({ ...prev, [key]: checked }));
+    setFilter(prev => {
+      const newFilter = { ...prev, [key]: checked };
+      console.log('New filter state:', newFilter);
+      return newFilter;
+    });
   };
 
   return (

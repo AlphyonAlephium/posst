@@ -24,16 +24,21 @@ export const useMap = (filter?: MapFilter) => {
 
     if (locations) {
       setLastLocations(locations);
-      
+
+      // Apply filters if they exist
       let filteredLocations = [...locations];
       if (filter) {
         filteredLocations = locations.filter(location => {
-          if (location.is_company === true) {
+          if (location.is_company) {
             return filter.showBusinesses;
+          } else {
+            return filter.showUsers;
           }
-          return filter.showUsers;
         });
       }
+
+      console.log('Filtered locations:', filteredLocations.length, 'Total locations:', locations.length);
+      console.log('Filter settings:', filter);
 
       const geoJson = {
         type: 'FeatureCollection',
@@ -56,7 +61,7 @@ export const useMap = (filter?: MapFilter) => {
       }
       
       return locations.map(loc => ({ 
-        user_id: loc.user_id!,
+        user_id: loc.user_id,
         is_company: loc.is_company || false 
       }));
     }
@@ -65,12 +70,17 @@ export const useMap = (filter?: MapFilter) => {
 
   useEffect(() => {
     if (filter && map.current && lastLocations.length > 0) {
+      // Apply filters
       const filteredLocations = lastLocations.filter(location => {
-        if (location.is_company === true) {
+        if (location.is_company) {
           return filter.showBusinesses;
+        } else {
+          return filter.showUsers;
         }
-        return filter.showUsers;
       });
+
+      console.log('Filter changed. Filtered locations:', filteredLocations.length, 'Total locations:', lastLocations.length);
+      console.log('Filter settings:', filter);
 
       const geoJson = {
         type: 'FeatureCollection',

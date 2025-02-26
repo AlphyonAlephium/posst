@@ -2,7 +2,7 @@
 import { useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER } from '../types';
+import { Location, LATVIA_CENTER, LocationWithProfile } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useMap = () => {
@@ -13,31 +13,116 @@ export const useMap = () => {
     if (!map.current) return [];
 
     try {
-      let query = supabase
-        .from('locations')
-        .select('locations.latitude, locations.longitude, locations.user_id, profiles.is_company');
-
-      // Join with profiles to get is_company status
-      query = query.join('profiles', 'locations.user_id', 'eq', 'profiles.id');
+      // Using a raw SQL query with joins instead of the problematic .join() method
+      let query = `
+        SELECT 
+          locations.latitude, 
+          locations.longitude, 
+          locations.user_id, 
+          profiles.is_company
+        FROM 
+          locations
+        LEFT JOIN 
+          profiles ON locations.user_id = profiles.id
+      `;
 
       // Apply filter if needed
       if (filterType === 'businesses') {
-        query = query.eq('profiles.is_company', true);
+        query += ` WHERE profiles.is_company = true`;
       } else if (filterType === 'users') {
-        query = query.eq('profiles.is_company', false);
+        query += ` WHERE profiles.is_company = false`;
       }
 
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc('execute_sql', { sql_query: query });
 
       if (error) {
         console.error('Error fetching locations:', error);
         return [];
       }
 
+      // If we don't have the edge function implemented, fallback to separate queries
+      if (!data) {
+        // Fallback approach: Do two separate queries and combine the results in JavaScript
+        const { data: locationsData, error: locationsError } = await supabase
+          .from('locations')
+          .select('latitude, longitude, user_id');
+
+        if (locationsError) {
+          console.error('Error fetching locations:', locationsError);
+          return [];
+        }
+
+        // Early return if no locations
+        if (!locationsData || locationsData.length === 0) return [];
+
+        // Get all profile information in one go
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, is_company');
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          return [];
+        }
+
+        // Create a map for quick profile lookup
+        const profilesMap = new Map();
+        profilesData?.forEach(profile => {
+          profilesMap.set(profile.id, { is_company: profile.is_company });
+        });
+
+        // Merge data and apply filters
+        const mergedData = locationsData.map(location => {
+          const profile = profilesMap.get(location.user_id) || { is_company: false };
+          return {
+            ...location,
+            is_company: profile.is_company
+          };
+        });
+
+        // Apply filter
+        const filteredData = filterType === 'all' 
+          ? mergedData
+          : filterType === 'businesses'
+            ? mergedData.filter(item => item.is_company)
+            : mergedData.filter(item => !item.is_company);
+
+        if (filteredData && filteredData.length > 0) {
+          const geoJson = {
+            type: 'FeatureCollection',
+            features: filteredData.map(location => ({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [location.longitude, location.latitude]
+              },
+              properties: {
+                user_id: location.user_id,
+                is_company: location.is_company
+              }
+            }))
+          };
+
+          // Check if the source already exists before setting data
+          const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+          if (source) {
+            source.setData(geoJson as any);
+          }
+          
+          return filteredData.map(loc => ({ 
+            user_id: loc.user_id,
+            is_company: loc.is_company
+          }));
+        }
+        
+        return [];
+      }
+
+      // Process the data from the SQL query
       if (data && data.length > 0) {
         const geoJson = {
           type: 'FeatureCollection',
-          features: data.map(location => ({
+          features: data.map((location: LocationWithProfile) => ({
             type: 'Feature',
             geometry: {
               type: 'Point',
@@ -56,7 +141,7 @@ export const useMap = () => {
           source.setData(geoJson as any);
         }
         
-        return data.map(loc => ({ 
+        return data.map((loc: LocationWithProfile) => ({ 
           user_id: loc.user_id,
           is_company: loc.is_company
         }));
@@ -88,7 +173,7 @@ export const useMap = () => {
         .from('locations')
         .select('latitude, longitude')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error || !userLocation) {
         // If no stored location, try to get current location

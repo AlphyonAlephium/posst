@@ -36,3 +36,10 @@ export interface HotDeal {
   image_url: string;
   created_at: string;
 }
+
+export interface LocationWithProfile {
+  latitude: number;
+  longitude: number;
+  user_id: string;
+  is_company: boolean;
+}

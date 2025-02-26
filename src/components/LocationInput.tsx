@@ -17,7 +17,7 @@ export const LocationInput = ({ type, placeholder }: LocationInputProps) => {
       <input
         type="text"
         placeholder={placeholder}
-        className="instagram-input pl-10 pr-10 py-3"
+        className="instagram-input pl-10 pr-10 py-3 w-full transition-all focus:shadow-md"
       />
       
       <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">

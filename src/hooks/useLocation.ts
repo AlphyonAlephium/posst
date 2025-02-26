@@ -63,6 +63,15 @@ export const useLocation = () => {
         return;
       }
 
+      // Get user profile to check if they're a company
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_company')
+        .eq('id', user.id)
+        .single();
+
+      const isCompany = profileData?.is_company || false;
+
       // Check if user already has a location
       const { data: existingLocations } = await supabase
         .from('locations')
@@ -75,7 +84,8 @@ export const useLocation = () => {
           .from('locations')
           .update({
             latitude,
-            longitude
+            longitude,
+            is_company: isCompany
           })
           .eq('user_id', user.id);
 
@@ -94,7 +104,8 @@ export const useLocation = () => {
           .insert([{
             latitude,
             longitude,
-            user_id: user.id
+            user_id: user.id,
+            is_company: isCompany
           }]);
 
         if (error) {

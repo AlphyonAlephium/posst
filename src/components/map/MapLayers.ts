@@ -155,4 +155,70 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
       ]
     }
   });
+
+  // Add treasures source
+  map.addSource('treasures', {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: []
+    }
+  });
+
+  // Add treasure marker layer
+  map.addLayer({
+    id: 'treasures-markers',
+    type: 'circle',
+    source: 'treasures',
+    paint: {
+      'circle-color': [
+        'case',
+        ['to-boolean', ['get', 'is_found']],
+        '#8B4513',  // Brown for found treasures
+        '#FFD700'   // Gold for unfound treasures
+      ],
+      'circle-radius': 15,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': [
+        'case',
+        ['to-boolean', ['get', 'is_found']],
+        '#A52A2A',  // Darker brown for found treasures
+        '#FFA500'   // Orange for unfound treasures
+      ]
+    }
+  });
+
+  // Add treasure glow effect
+  map.addLayer({
+    id: 'treasure-glow',
+    type: 'circle',
+    source: 'treasures',
+    filter: ['!', ['to-boolean', ['get', 'is_found']]],
+    paint: {
+      'circle-radius': 25,
+      'circle-color': '#FFD700',
+      'circle-opacity': [
+        'interpolate',
+        ['linear'],
+        ['%', ['*', ['time'], 0.001], 1.0],
+        0, 0.3,
+        0.5, 0.1,
+        1, 0.3
+      ],
+      'circle-stroke-width': 0
+    }
+  });
+
+  // Add treasure symbols
+  map.addLayer({
+    id: 'treasure-symbols',
+    type: 'symbol',
+    source: 'treasures',
+    layout: {
+      'text-field': '💰',
+      'text-size': 12,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    }
+  });
 };

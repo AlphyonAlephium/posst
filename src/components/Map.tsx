@@ -14,7 +14,7 @@ import { CreateTreasureDialog } from './map/CreateTreasureDialog';
 import { Treasure } from './map/types/treasures';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
-import { ChestIcon } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -166,7 +166,7 @@ export const Map = () => {
           className="absolute bottom-4 right-4 z-10 bg-amber-500 hover:bg-amber-600"
           onClick={() => setIsCreateTreasureDialogOpen(true)}
         >
-          <ChestIcon className="mr-2 h-4 w-4" />
+          <MapIcon className="mr-2 h-4 w-4" />
           Hide Treasure
         </Button>
       </div>

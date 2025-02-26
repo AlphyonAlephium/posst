@@ -3,12 +3,10 @@ export interface Location {
   latitude: number;
   longitude: number;
   user_id: string;
-  is_company: boolean;
 }
 
 export interface NearbyUser {
   user_id: string;
-  is_company: boolean;
 }
 
 export const LATVIA_CENTER = {
@@ -52,9 +50,4 @@ export interface BusinessProfile {
   cover_image_url: string | null;
   created_at: string;
   updated_at: string | null;
-}
-
-export interface MapFilter {
-  showBusinesses: boolean;
-  showUsers: boolean;
 }

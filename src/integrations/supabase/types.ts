@@ -97,7 +97,6 @@ export type Database = {
         Row: {
           created_at: string | null
           id: number
-          is_company: boolean | null
           latitude: number
           longitude: number
           user_id: string | null
@@ -105,7 +104,6 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: number
-          is_company?: boolean | null
           latitude: number
           longitude: number
           user_id?: string | null
@@ -113,7 +111,6 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: number
-          is_company?: boolean | null
           latitude?: number
           longitude?: number
           user_id?: string | null
@@ -206,77 +203,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      treasures: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          hint: string | null
-          id: string
-          image_url: string | null
-          is_found: boolean | null
-          latitude: number
-          longitude: number
-          name: string
-          reward_amount: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          hint?: string | null
-          id?: string
-          image_url?: string | null
-          is_found?: boolean | null
-          latitude: number
-          longitude: number
-          name: string
-          reward_amount?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          hint?: string | null
-          id?: string
-          image_url?: string | null
-          is_found?: boolean | null
-          latitude?: number
-          longitude?: number
-          name?: string
-          reward_amount?: number | null
-        }
-        Relationships: []
-      }
-      treasures_found: {
-        Row: {
-          found_at: string | null
-          id: string
-          treasure_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          found_at?: string | null
-          id?: string
-          treasure_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          found_at?: string | null
-          id?: string
-          treasure_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "treasures_found_treasure_id_fkey"
-            columns: ["treasure_id"]
-            isOneToOne: false
-            referencedRelation: "treasures"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       wallets: {
         Row: {

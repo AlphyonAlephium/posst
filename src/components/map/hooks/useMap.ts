@@ -1,21 +1,20 @@
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER, MapFilter } from '../types';
+import { Location, LATVIA_CENTER } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
-export const useMap = (filter?: MapFilter) => {
+export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const toast = useToast();
-  const [lastLocations, setLastLocations] = useState<Location[]>([]);
 
   const updateLocationSource = async () => {
     if (!map.current) return;
 
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('latitude, longitude, user_id, is_company');
+      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -23,107 +22,36 @@ export const useMap = (filter?: MapFilter) => {
     }
 
     if (locations) {
-      // Cast to ensure TypeScript recognizes the returned data format
-      const typedLocations = locations as Location[];
-      setLastLocations(typedLocations);
-
-      // Apply filters if they exist
-      let filteredLocations = [...typedLocations];
-      
-      if (filter) {
-        console.log('Applying filter, before:', filteredLocations.length);
-        
-        filteredLocations = typedLocations.filter(location => {
-          // Handle null is_company as regular user
-          const isCompany = location.is_company === true;
-          
-          if (isCompany) {
-            const shouldShow = filter.showBusinesses;
-            console.log(`Business ${location.user_id}: ${shouldShow ? 'show' : 'hide'}`);
-            return shouldShow;
-          } else {
-            const shouldShow = filter.showUsers;
-            console.log(`Regular user ${location.user_id}: ${shouldShow ? 'show' : 'hide'}`);
-            return shouldShow;
-          }
-        });
-        
-        console.log('After filtering:', filteredLocations.length);
-      }
-
-      console.log('Filtered locations:', filteredLocations.length, 'Total locations:', typedLocations.length);
-      console.log('Filter settings:', filter);
-
       const geoJson = {
         type: 'FeatureCollection',
-        features: filteredLocations.map(location => ({
+        features: locations.map(location => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id,
-            is_company: location.is_company === true
+            user_id: location.user_id
           }
         }))
       };
 
+      // Check if the source already exists before setting data
       const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
       if (source) {
         source.setData(geoJson as any);
       }
       
-      return typedLocations.map(loc => ({ 
-        user_id: loc.user_id,
-        is_company: loc.is_company === true
-      }));
+      return locations.map(loc => ({ user_id: loc.user_id! }));
     }
     return [];
   };
-
-  useEffect(() => {
-    if (filter && map.current && lastLocations.length > 0) {
-      // Apply filters when filter changes
-      const filteredLocations = lastLocations.filter(location => {
-        const isCompany = location.is_company === true;
-        
-        if (isCompany) {
-          return filter.showBusinesses;
-        } else {
-          return filter.showUsers;
-        }
-      });
-
-      console.log('Filter changed. Filtered locations:', filteredLocations.length, 'Total locations:', lastLocations.length);
-      console.log('Filter settings:', filter);
-
-      const geoJson = {
-        type: 'FeatureCollection',
-        features: filteredLocations.map(location => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [location.longitude, location.latitude]
-          },
-          properties: {
-            user_id: location.user_id,
-            is_company: location.is_company === true
-          }
-        }))
-      };
-
-      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
-      if (source) {
-        source.setData(geoJson as any);
-      }
-    }
-  }, [filter, lastLocations]);
 
   const centerOnUserLocation = async () => {
     if (!map.current) return;
     
     try {
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -135,6 +63,7 @@ export const useMap = (filter?: MapFilter) => {
         return;
       }
 
+      // Get user's location from database
       const { data: userLocation, error } = await supabase
         .from('locations')
         .select('latitude, longitude')
@@ -142,6 +71,7 @@ export const useMap = (filter?: MapFilter) => {
         .single();
 
       if (error || !userLocation) {
+        // If no stored location, try to get current location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -165,6 +95,7 @@ export const useMap = (filter?: MapFilter) => {
         return;
       }
 
+      // If we have a stored location, center the map on it
       map.current.flyTo({
         center: [userLocation.longitude, userLocation.latitude],
         zoom: 15,

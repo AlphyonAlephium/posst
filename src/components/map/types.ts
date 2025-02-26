@@ -35,3 +35,19 @@ export interface HotDeal {
   image_url: string;
   created_at: string;
 }
+
+export interface BusinessProfile {
+  id: number;
+  user_id: string;
+  business_name: string;
+  description: string | null;
+  address: string | null;
+  phone_number: string | null;
+  website: string | null;
+  open_hours: string | null;
+  delivery_available: boolean;
+  logo_url: string | null;
+  cover_image_url: string | null;
+  created_at: string;
+  updated_at: string | null;
+}

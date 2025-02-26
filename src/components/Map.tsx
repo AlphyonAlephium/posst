@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { NearbyUser } from './map/types';
 import { useMap } from './map/hooks/useMap';
@@ -8,22 +8,12 @@ import { useFileSender } from './map/hooks/useFileSender';
 import { useMapSetup } from './map/hooks/useMapSetup';
 import { MapView } from './map/MapView';
 import { SendFileDialog } from './map/SendFileDialog';
-import { MapFilter } from './map/MapFilter';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
-  const [showUsers, setShowUsers] = useState<boolean>(true);
-  const [showBusinesses, setShowBusinesses] = useState<boolean>(true);
   
-  const { 
-    map, 
-    initializeMap, 
-    updateLocationSource, 
-    centerOnUserLocation,
-    applyVisibilityFilter 
-  } = useMap();
-  
+  const { map, initializeMap, updateLocationSource, centerOnUserLocation } = useMap();
   const { 
     isMessageDialogOpen, 
     setIsMessageDialogOpen, 
@@ -53,35 +43,12 @@ export const Map = () => {
     centerOnUserLocation();
   };
 
-  // Apply visibility filters whenever they change
-  useEffect(() => {
-    if (map.current) {
-      applyVisibilityFilter(showUsers, showBusinesses);
-    }
-  }, [showUsers, showBusinesses, map.current]);
-
-  const handleFilterChange = (filterType: 'users' | 'businesses', value: boolean) => {
-    if (filterType === 'users') {
-      setShowUsers(value);
-    } else {
-      setShowBusinesses(value);
-    }
-  };
-
   return (
     <>
       <MapView 
         mapContainerRef={mapContainer} 
         onCenterLocation={handleCenterOnUserLocation} 
       />
-
-      <div className="mt-2">
-        <MapFilter
-          showUsers={showUsers}
-          showBusinesses={showBusinesses}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
 
       <SendFileDialog
         isOpen={isMessageDialogOpen}

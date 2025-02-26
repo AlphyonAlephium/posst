@@ -1,3 +1,4 @@
+
 import { useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,27 +54,50 @@ export const useMap = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // Get locations data - using separate queries instead of joins to avoid relation errors
+      const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
-        .select(`
-          id,
-          latitude,
-          longitude,
-          user_id,
-          profiles(is_company, company_name),
-          business_profiles(business_name)
-        `);
+        .select('id, latitude, longitude, user_id');
 
-      if (error) {
-        throw error;
-      }
+      if (locationsError) throw locationsError;
+      
+      // For each location, fetch the related profile and business_profile data
+      const nearbyUsers: NearbyUser[] = [];
+      const features: mapboxgl.GeoJSONFeature[] = [];
+      
+      // Process each location
+      for (const location of locationsData) {
+        // Get profile data for this user
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_company, company_name')
+          .eq('id', location.user_id)
+          .maybeSingle();
+          
+        // Get business profile data for this user
+        const { data: businessProfileData } = await supabase
+          .from('business_profiles')
+          .select('business_name')
+          .eq('user_id', location.user_id)
+          .maybeSingle();
 
-      const features = data.map(location => {
-        const isCompany = location.profiles?.is_company === true;
+        // Determine if this is a company
+        const isCompany = profileData?.is_company === true;
+        const hasHotDeal = false; // This could be determined from hot_deals table if needed
         
-        const hasHotDeal = false;
+        // Get company name from either profile or business_profile
+        const companyName = isCompany 
+          ? (profileData?.company_name || businessProfileData?.business_name || '')
+          : '';
 
-        return {
+        // Add to nearby users array
+        nearbyUsers.push({
+          user_id: location.user_id || '',
+          is_company: isCompany
+        });
+        
+        // Add to GeoJSON features
+        features.push({
           type: 'Feature',
           geometry: {
             type: 'Point',
@@ -83,11 +107,12 @@ export const useMap = () => {
             user_id: location.user_id,
             is_company: isCompany,
             has_hot_deal: hasHotDeal,
-            company_name: location.profiles?.company_name || location.business_profiles?.business_name || ''
+            company_name: companyName
           }
-        };
-      });
+        } as mapboxgl.GeoJSONFeature);
+      }
       
+      // Update the map source if it exists
       if (map.current.getSource('locations')) {
         (map.current.getSource('locations') as mapboxgl.GeoJSONSource).setData({
           type: 'FeatureCollection',
@@ -95,10 +120,7 @@ export const useMap = () => {
         });
       }
 
-      return data.map(location => ({
-        user_id: location.user_id || '',
-        is_company: location.profiles?.is_company === true
-      }));
+      return nearbyUsers;
 
     } catch (error) {
       console.error('Error updating location source:', error);

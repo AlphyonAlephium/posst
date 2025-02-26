@@ -6,7 +6,7 @@ import { RideOptions } from "@/components/RideOptions";
 import { LocationActions } from "@/components/LocationActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
-import { TagIcon, Home, Search, Heart, User } from "lucide-react";
+import { TagIcon, Home, Search, Heart, User, Plus } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
 
 const Index = () => {

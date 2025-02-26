@@ -5,12 +5,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogDescription,
-  DialogTabs,
-  DialogTab,
-  DialogTabsContent,
-  DialogTabsList,
-  DialogTabsTrigger
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHotDealForm } from './hot-deals/useHotDealForm';

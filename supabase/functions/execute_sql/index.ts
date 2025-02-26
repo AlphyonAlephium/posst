@@ -30,10 +30,11 @@ serve(async (req) => {
       );
     }
 
-    // Execute the SQL query
+    // Execute the SQL query using the database connection
     const { data, error } = await supabaseClient.rpc('execute_sql_query', { query: sql_query });
 
     if (error) {
+      console.error("SQL execution error:", error);
       return new Response(
         JSON.stringify({ error: error.message }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
@@ -46,6 +47,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("Edge function error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }

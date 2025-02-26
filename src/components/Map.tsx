@@ -53,7 +53,7 @@ export const Map = () => {
       <SendFileDialog
         isOpen={isMessageDialogOpen}
         onOpenChange={setIsMessageDialogOpen}
-        nearbyUsers={nearbyUsers.filter(user => !user.is_company)} // Filter out business users for sending files
+        nearbyUsers={nearbyUsers}
         selectedUserIds={selectedUserIds}
         onUserSelect={setSelectedUserIds}
         selectedFile={selectedFile}

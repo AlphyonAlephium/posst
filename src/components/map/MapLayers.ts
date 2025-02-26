@@ -2,7 +2,6 @@
 import mapboxgl from 'mapbox-gl';
 
 export const setupMapLayers = (map: mapboxgl.Map) => {
-  // Create a GeoJSON data source
   map.addSource('locations', {
     type: 'geojson',
     data: {
@@ -14,7 +13,7 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     clusterRadius: 50
   });
 
-  // Add cluster layer
+  // Add clusters layer with Instagram-like styling
   map.addLayer({
     id: 'clusters',
     type: 'circle',
@@ -22,27 +21,30 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     filter: ['has', 'point_count'],
     paint: {
       'circle-color': [
-        'step',
-        ['get', 'point_count'],
-        '#51bbd6',
-        5,
-        '#f1f075',
-        10,
-        '#f28cb1'
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#E1306C', // Instagram pink for clusters with hot deals
+        '#FFFFFF' // White for regular clusters
       ],
       'circle-radius': [
         'step',
         ['get', 'point_count'],
         20,
-        5,
-        30,
-        10,
-        40
-      ]
+        10, 30,
+        20, 40
+      ],
+      'circle-stroke-width': 2,
+      'circle-stroke-color': [
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#C13584', // Instagram gradient darker pink
+        '#EFEFEF' // Light gray stroke
+      ],
+      'circle-opacity': 0.9
     }
   });
 
-  // Add cluster count text
+  // Add cluster count labels
   map.addLayer({
     id: 'cluster-count',
     type: 'symbol',
@@ -52,50 +54,105 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
       'text-field': '{point_count_abbreviated}',
       'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
       'text-size': 12
+    },
+    paint: {
+      'text-color': [
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#FFFFFF', // White text for hot deal clusters
+        '#262626'  // Instagram dark gray text for regular clusters
+      ]
     }
   });
 
-  // Add unclustered point layer for regular users
+  // Add unclustered point layer with Instagram-style markers
   map.addLayer({
     id: 'unclustered-point',
     type: 'circle',
     source: 'locations',
-    filter: ['all', ['!', ['has', 'point_count']], ['!', ['get', 'is_company']]],
+    filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-color': '#11b4da',
-      'circle-radius': 12,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': '#fff'
+      'circle-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#E1306C', // Instagram pink for company with hot deals
+          '#FCAF45'  // Instagram orange/gold for regular companies
+        ],
+        '#FFFFFF'    // White for regular users
+      ],
+      'circle-radius': 18,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#C13584',  // Instagram gradient darker pink
+          '#F77737'   // Instagram darker orange
+        ],
+        '#EFEFEF'     // Light gray stroke for regular users
+      ],
+      'circle-opacity': 0.9
     }
   });
-  
-  // Add business point layer with different styling
+
+  // Pulsing effect for hot deals
   map.addLayer({
-    id: 'business-point',
+    id: 'hot-deal-pulse',
     type: 'circle',
     source: 'locations',
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'is_company'], true]],
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['to-boolean', ['get', 'has_hot_deal']]
+    ],
     paint: {
-      'circle-color': '#f7b733',
-      'circle-radius': 14,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#fff'
+      'circle-radius': 24,
+      'circle-color': '#E1306C',
+      'circle-opacity': [
+        'interpolate',
+        ['linear'],
+        ['%', ['*', ['time'], 0.001], 1.0],
+        0, 0.3,
+        0.5, 0.15,
+        1, 0.3
+      ],
+      'circle-stroke-width': 0
     }
   });
-  
-  // Add business icon
+
+  // Add unclustered point count/icon
   map.addLayer({
-    id: 'business-symbol',
+    id: 'unclustered-point-count',
     type: 'symbol',
     source: 'locations',
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'is_company'], true]],
+    filter: ['!', ['has', 'point_count']],
     layout: {
-      'text-field': 'B',
-      'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
+      'text-field': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        'C',
+        '1'
+      ],
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
       'text-size': 12
     },
     paint: {
-      'text-color': '#ffffff'
+      'text-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#FFFFFF', // White text for hot deal companies
+          '#FFFFFF'  // White text for regular companies
+        ],
+        '#262626'    // Instagram dark gray for regular users
+      ]
     }
   });
 };

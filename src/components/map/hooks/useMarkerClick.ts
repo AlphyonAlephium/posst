@@ -1,5 +1,5 @@
+
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { NearbyUser } from '../types';
@@ -8,16 +8,15 @@ export const useMarkerClick = () => {
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const handleMarkerClick = async (userId: string, isCompany: boolean = false) => {
+  const handleMarkerClick = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "You must be logged in to interact with users"
+        description: "You must be logged in to send messages"
       });
       return;
     }
@@ -26,13 +25,8 @@ export const useMarkerClick = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "You cannot interact with yourself"
+        description: "You cannot send a message to yourself"
       });
-      return;
-    }
-
-    if (isCompany) {
-      navigate(`/business/${userId}`);
       return;
     }
 

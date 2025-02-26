@@ -11,7 +11,7 @@ export const useMapSetup = (
   initializeMap: (containerRef: HTMLDivElement) => Promise<mapboxgl.Map>,
   updateLocationSource: () => Promise<NearbyUser[]>,
   setNearbyUsers: (users: NearbyUser[]) => void,
-  handleMarkerClick: (userId: string, isCompany?: boolean) => void
+  handleMarkerClick: (userId: string) => void
 ) => {
   const { toast } = useToast();
 
@@ -28,21 +28,11 @@ export const useMapSetup = (
             setNearbyUsers(users);
           });
 
-          // Handle clicks on individual user points
+          // Handle clicks on individual points
           mapInstance.on('click', 'unclustered-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
-              const isCompany = false; // Regular user points
-              handleMarkerClick(userId, isCompany);
-            }
-          });
-          
-          // Handle clicks on business points
-          mapInstance.on('click', 'business-point', (e) => {
-            if (e.features && e.features[0].properties) {
-              const userId = e.features[0].properties.user_id;
-              const isCompany = true; // Business points
-              handleMarkerClick(userId, isCompany);
+              handleMarkerClick(userId);
             }
           });
 
@@ -76,12 +66,6 @@ export const useMapSetup = (
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
           mapInstance.on('mouseleave', 'unclustered-point', () => {
-            mapInstance.getCanvas().style.cursor = '';
-          });
-          mapInstance.on('mouseenter', 'business-point', () => {
-            mapInstance.getCanvas().style.cursor = 'pointer';
-          });
-          mapInstance.on('mouseleave', 'business-point', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
         });

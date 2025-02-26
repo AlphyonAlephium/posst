@@ -45,10 +45,31 @@ export const RecentlyAddedBusinesses = () => {
       return path;
     }
     
-    // For relative paths, get the public URL from Supabase
-    const { data } = supabase.storage.from('business_profiles').getPublicUrl(path);
-    return data.publicUrl;
+    try {
+      // For relative paths, check if the storage bucket exists first
+      const { data } = supabase.storage.from('business_profiles').getPublicUrl(path);
+      
+      // Ensure we have a valid URL
+      if (data && data.publicUrl) {
+        console.log("Generated image URL:", data.publicUrl);
+        return data.publicUrl;
+      }
+      
+      // Fallback if no valid URL is generated
+      console.warn("Failed to get public URL for path:", path);
+      return null;
+    } catch (error) {
+      console.error("Error getting public URL:", error);
+      return null;
+    }
   };
+
+  // Fallback image component
+  const FallbackImage = () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+      <Building className="h-6 w-6 text-gray-400" />
+    </div>
+  );
 
   if (loading) {
     return (
@@ -77,23 +98,25 @@ export const RecentlyAddedBusinesses = () => {
                 <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
                   {business.logo_url ? (
                     <img 
-                      src={getPublicUrl(business.logo_url)}
+                      src={getPublicUrl(business.logo_url) || '/placeholder.svg'}
                       alt={business.business_name} 
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         // Fallback if image fails to load
+                        console.log("Image failed to load:", e.currentTarget.src);
                         e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = `
-                          <div class="w-full h-full flex items-center justify-center bg-gray-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-gray-400"><path d="M6 9v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"/><circle cx="9" cy="6" r="2"/><path d="M14.5 3.5C16.5 5.5 17 7 17 8.5c0 1.5-.5 3-2.5 5C12.5 11.5 12 10 12 8.5c0-1.5.5-3 2.5-5Z"/></svg>
-                          </div>
-                        `;
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-gray-400"><path d="M6 9v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3"/><circle cx="9" cy="6" r="2"/><path d="M14.5 3.5C16.5 5.5 17 7 17 8.5c0 1.5-.5 3-2.5 5C12.5 11.5 12 10 12 8.5c0-1.5.5-3 2.5-5Z"/></svg>
+                            </div>
+                          `;
+                        }
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <Building className="h-6 w-6 text-gray-400" />
-                    </div>
+                    <FallbackImage />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

@@ -6,18 +6,16 @@ import { RideOptions } from "@/components/RideOptions";
 import { LocationActions } from "@/components/LocationActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
-import { TagIcon, Home, Search, Heart, User, Plus, Activity, Building, Compass } from "lucide-react";
+import { TagIcon, Home, Search, Heart, User, Plus, Activity, Building } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
 import { RecentActivityTimeline } from "@/components/map/recent-activity/RecentActivityTimeline";
 import { RecentlyAddedBusinesses } from "@/components/map/RecentlyAddedBusinesses";
-import { TreasureList } from "@/components/map/TreasureList";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   const { userName, isCompany } = useUserProfile();
   const [hotDealDialogOpen, setHotDealDialogOpen] = useState(false);
   const [showMobileActivity, setShowMobileActivity] = useState(false);
-  const [showMobileTreasures, setShowMobileTreasures] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -61,14 +59,6 @@ const Index = () => {
                     </Link>
                   </div>
                 )}
-              </div>
-              
-              {/* Treasure Hunt - Left Sidebar */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <span className="text-amber-500">✨</span> Treasure Hunt
-                </h2>
-                <TreasureList />
               </div>
               
               {/* Recently Added Businesses - Left Sidebar */}
@@ -123,16 +113,6 @@ const Index = () => {
                 <RideOptions />
               </div>
               
-              {/* Mobile Treasure Hunt - Only visible on mobile when toggled */}
-              <div className={`lg:hidden mt-4 ${showMobileTreasures ? 'block' : 'hidden'}`}>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-amber-500">✨</span> Treasure Hunt
-                  </h2>
-                  <TreasureList />
-                </div>
-              </div>
-              
               {/* Mobile Recent Activity - Only visible on mobile when toggled */}
               <div className={`lg:hidden mt-4 ${showMobileActivity ? 'block' : 'hidden'}`}>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -170,24 +150,15 @@ const Index = () => {
           variant="ghost" 
           size="icon" 
           className="text-gray-800"
-          onClick={() => {
-            setShowMobileActivity(!showMobileActivity);
-            if (showMobileTreasures) setShowMobileTreasures(false);
-          }}
+          onClick={() => setShowMobileActivity(!showMobileActivity)}
         >
           <Activity className="h-6 w-6" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-gray-800"
-          onClick={() => {
-            setShowMobileTreasures(!showMobileTreasures);
-            if (showMobileActivity) setShowMobileActivity(false);
-          }}
-        >
-          <Compass className="h-6 w-6" />
-        </Button>
+        <Link to="/businesses">
+          <Button variant="ghost" size="icon" className="text-gray-800">
+            <Building className="h-6 w-6" />
+          </Button>
+        </Link>
       </div>
       
       <HotDealDialog 

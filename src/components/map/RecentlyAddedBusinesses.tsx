@@ -6,7 +6,11 @@ import { Building, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BusinessProfile } from "./types";
 
-export const RecentlyAddedBusinesses = () => {
+interface RecentlyAddedBusinessesProps {
+  showMore?: boolean;
+}
+
+export const RecentlyAddedBusinesses = ({ showMore = false }: RecentlyAddedBusinessesProps) => {
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +23,7 @@ export const RecentlyAddedBusinesses = () => {
           .from('business_profiles')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(showMore ? 20 : 5);
           
         if (error) {
           throw error;
@@ -34,7 +38,7 @@ export const RecentlyAddedBusinesses = () => {
     };
     
     fetchRecentBusinesses();
-  }, []);
+  }, [showMore]);
 
   if (loading) {
     return (
@@ -66,6 +70,9 @@ export const RecentlyAddedBusinesses = () => {
                       src={business.logo_url} 
                       alt={business.business_name} 
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.svg";
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100">

@@ -7,6 +7,7 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import BusinessProfile from "@/pages/BusinessProfile";
 import ViewBusinessProfile from "@/pages/ViewBusinessProfile";
+import BusinessesPage from "@/pages/BusinessesPage";
 import "./App.css";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/business/edit" element={<BusinessProfile />} />
           <Route path="/business/:businessId" element={<ViewBusinessProfile />} />
+          <Route path="/businesses" element={<BusinessesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

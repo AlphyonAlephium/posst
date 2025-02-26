@@ -6,7 +6,7 @@ import { RideOptions } from "@/components/RideOptions";
 import { LocationActions } from "@/components/LocationActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
-import { TagIcon, Home, Search, Heart, User, Plus, Activity, UserCog } from "lucide-react";
+import { TagIcon, Home, Search, Heart, User, Plus, Activity, Building } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
 import { RecentActivityTimeline } from "@/components/map/recent-activity/RecentActivityTimeline";
 import { RecentlyAddedBusinesses } from "@/components/map/RecentlyAddedBusinesses";
@@ -53,7 +53,7 @@ const Index = () => {
                         variant="outline"
                         className="w-full py-3 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
                       >
-                        <UserCog className="mr-2 h-5 w-5" />
+                        <User className="mr-2 h-5 w-5" />
                         Manage business profile
                       </Button>
                     </Link>
@@ -99,18 +99,12 @@ const Index = () => {
                       variant="outline"
                       className="w-full py-3 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
                     >
-                      <UserCog className="mr-2 h-5 w-5" />
+                      <User className="mr-2 h-5 w-5" />
                       Manage business profile
                     </Button>
                   </Link>
                 </div>
               )}
-              
-              {/* Recently Added Businesses - Mobile */}
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-5">
-                <h2 className="text-base font-semibold mb-3">Recently Added Businesses</h2>
-                <RecentlyAddedBusinesses />
-              </div>
             </div>
             
             <div>
@@ -141,9 +135,11 @@ const Index = () => {
       
       {/* Instagram-style bottom navigation - only visible on mobile */}
       <div className="fixed bottom-0 left-0 right-0 bottom-nav h-14 flex items-center justify-around px-4 z-40 lg:hidden">
-        <Button variant="ghost" size="icon" className="text-gray-800">
-          <Home className="h-6 w-6" />
-        </Button>
+        <Link to="/">
+          <Button variant="ghost" size="icon" className="text-gray-800">
+            <Home className="h-6 w-6" />
+          </Button>
+        </Link>
         <Button variant="ghost" size="icon" className="text-gray-800">
           <Search className="h-6 w-6" />
         </Button>
@@ -158,9 +154,9 @@ const Index = () => {
         >
           <Activity className="h-6 w-6" />
         </Button>
-        <Link to="/business/edit">
+        <Link to="/businesses">
           <Button variant="ghost" size="icon" className="text-gray-800">
-            <User className="h-6 w-6" />
+            <Building className="h-6 w-6" />
           </Button>
         </Link>
       </div>

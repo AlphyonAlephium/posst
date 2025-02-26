@@ -11,7 +11,7 @@ export const useMapSetup = (
   initializeMap: (containerRef: HTMLDivElement) => Promise<mapboxgl.Map>,
   updateLocationSource: () => Promise<NearbyUser[]>,
   setNearbyUsers: (users: NearbyUser[]) => void,
-  handleMarkerClick: (userId: string) => void
+  handleMarkerClick: (userId: string, isCompany?: boolean) => void
 ) => {
   const { toast } = useToast();
 
@@ -32,7 +32,8 @@ export const useMapSetup = (
           mapInstance.on('click', 'unclustered-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
-              handleMarkerClick(userId);
+              const isCompany = e.features[0].properties.is_company === true;
+              handleMarkerClick(userId, isCompany);
             }
           });
 

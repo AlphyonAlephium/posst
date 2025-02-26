@@ -3,10 +3,12 @@ export interface Location {
   latitude: number;
   longitude: number;
   user_id: string;
+  is_company?: boolean;
 }
 
 export interface NearbyUser {
   user_id: string;
+  is_company?: boolean;
 }
 
 export const LATVIA_CENTER = {

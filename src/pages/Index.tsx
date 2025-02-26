@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { TagIcon, Home, Search, Heart, User, Plus, Activity, UserCog } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
 import { RecentActivityTimeline } from "@/components/map/recent-activity/RecentActivityTimeline";
+import { RecentlyAddedBusinesses } from "@/components/map/RecentlyAddedBusinesses";
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -59,6 +60,12 @@ const Index = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Recently Added Businesses - Left Sidebar */}
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 className="text-lg font-semibold mb-4">Recently Added Businesses</h2>
+                <RecentlyAddedBusinesses />
+              </div>
             </div>
           </div>
           
@@ -98,6 +105,12 @@ const Index = () => {
                   </Link>
                 </div>
               )}
+              
+              {/* Recently Added Businesses - Mobile */}
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-5">
+                <h2 className="text-base font-semibold mb-3">Recently Added Businesses</h2>
+                <RecentlyAddedBusinesses />
+              </div>
             </div>
             
             <div>

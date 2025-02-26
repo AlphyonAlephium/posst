@@ -25,31 +25,32 @@ const Index = () => {
           {/* Left sidebar - only visible on large screens */}
           <div className="hidden lg:block lg:col-span-3 2xl:col-span-2">
             <div className="sticky top-20 space-y-4">
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 {userName && (
-                  <div className="mb-4">
-                    <h1 className="text-xl font-semibold text-gray-900">
-                      Welcome back, {userName}! 👋
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900">
+                      Hi, {userName} 👋
                     </h1>
+                    <p className="text-gray-500 mt-1">Welcome back to your dashboard</p>
                   </div>
                 )}
                 
                 {isCompany && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Button
                       size="lg"
-                      className="w-full instagram-button py-3"
+                      className="w-full instagram-gradient text-white font-medium py-3 transition-all hover:shadow-md"
                       onClick={() => setHotDealDialogOpen(true)}
                     >
                       <TagIcon className="mr-2 h-5 w-5" />
                       Manage hot deals
                     </Button>
                     
-                    <Link to="/business/edit">
+                    <Link to="/business/edit" className="block w-full">
                       <Button
                         size="lg"
                         variant="outline"
-                        className="w-full py-3"
+                        className="w-full py-3 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
                       >
                         <UserCog className="mr-2 h-5 w-5" />
                         Manage business profile
@@ -68,27 +69,28 @@ const Index = () => {
               {userName && (
                 <div className="mb-4">
                   <h1 className="text-xl font-semibold text-gray-900">
-                    Welcome back, {userName}! 👋
+                    Hi, {userName} 👋
                   </h1>
+                  <p className="text-gray-500 mt-1">Welcome back</p>
                 </div>
               )}
               
               {isCompany && (
-                <div className="space-y-2 mb-4">
+                <div className="space-y-3 mb-5">
                   <Button
                     size="lg"
-                    className="w-full instagram-button py-3"
+                    className="w-full instagram-gradient text-white font-medium py-3 transition-all hover:shadow-md"
                     onClick={() => setHotDealDialogOpen(true)}
                   >
                     <TagIcon className="mr-2 h-5 w-5" />
                     Manage hot deals
                   </Button>
                   
-                  <Link to="/business/edit">
+                  <Link to="/business/edit" className="block w-full">
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full py-3"
+                      className="w-full py-3 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all"
                     >
                       <UserCog className="mr-2 h-5 w-5" />
                       Manage business profile

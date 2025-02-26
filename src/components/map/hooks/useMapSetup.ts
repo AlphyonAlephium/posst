@@ -28,11 +28,20 @@ export const useMapSetup = (
             setNearbyUsers(users);
           });
 
-          // Handle clicks on individual points
+          // Handle clicks on individual user points
           mapInstance.on('click', 'unclustered-point', (e) => {
             if (e.features && e.features[0].properties) {
               const userId = e.features[0].properties.user_id;
-              const isCompany = e.features[0].properties.is_company === true;
+              const isCompany = false; // Regular user points
+              handleMarkerClick(userId, isCompany);
+            }
+          });
+          
+          // Handle clicks on business points
+          mapInstance.on('click', 'business-point', (e) => {
+            if (e.features && e.features[0].properties) {
+              const userId = e.features[0].properties.user_id;
+              const isCompany = true; // Business points
               handleMarkerClick(userId, isCompany);
             }
           });
@@ -67,6 +76,12 @@ export const useMapSetup = (
             mapInstance.getCanvas().style.cursor = 'pointer';
           });
           mapInstance.on('mouseleave', 'unclustered-point', () => {
+            mapInstance.getCanvas().style.cursor = '';
+          });
+          mapInstance.on('mouseenter', 'business-point', () => {
+            mapInstance.getCanvas().style.cursor = 'pointer';
+          });
+          mapInstance.on('mouseleave', 'business-point', () => {
             mapInstance.getCanvas().style.cursor = '';
           });
         });

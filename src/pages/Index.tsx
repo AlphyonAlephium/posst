@@ -6,13 +6,14 @@ import { RideOptions } from "@/components/RideOptions";
 import { LocationActions } from "@/components/LocationActions";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
-import { TagIcon, Home, Search, Heart, User, Plus } from "lucide-react";
+import { TagIcon, Home, Search, Heart, User, Plus, Activity } from "lucide-react";
 import { HotDealDialog } from "@/components/map/HotDealDialog";
 import { RecentActivityTimeline } from "@/components/map/recent-activity/RecentActivityTimeline";
 
 const Index = () => {
   const { userName, isCompany } = useUserProfile();
   const [hotDealDialogOpen, setHotDealDialogOpen] = useState(false);
+  const [showMobileActivity, setShowMobileActivity] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -79,6 +80,13 @@ const Index = () => {
               <div className="slide-up">
                 <RideOptions />
               </div>
+              
+              {/* Mobile Recent Activity - Only visible on mobile when toggled */}
+              <div className={`lg:hidden mt-4 ${showMobileActivity ? 'block' : 'hidden'}`}>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                  <RecentActivityTimeline />
+                </div>
+              </div>
             </div>
           </div>
           
@@ -104,8 +112,13 @@ const Index = () => {
         <Button variant="ghost" size="icon" className="instagram-gradient text-white rounded-full h-8 w-8 flex items-center justify-center">
           <Plus className="h-5 w-5" />
         </Button>
-        <Button variant="ghost" size="icon" className="text-gray-800">
-          <Heart className="h-6 w-6" />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-gray-800"
+          onClick={() => setShowMobileActivity(!showMobileActivity)}
+        >
+          <Activity className="h-6 w-6" />
         </Button>
         <Button variant="ghost" size="icon" className="text-gray-800">
           <User className="h-6 w-6" />

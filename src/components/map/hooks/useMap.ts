@@ -1,20 +1,20 @@
-
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
-import { Location, LATVIA_CENTER } from '../types';
+import { Location, LATVIA_CENTER, MapFilter } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 
-export const useMap = () => {
+export const useMap = (filter?: MapFilter) => {
   const map = useRef<mapboxgl.Map | null>(null);
   const toast = useToast();
+  const [lastLocations, setLastLocations] = useState<Location[]>([]);
 
   const updateLocationSource = async () => {
     if (!map.current) return;
 
     const { data: locations, error } = await supabase
       .from('locations')
-      .select('latitude, longitude, user_id') as { data: Location[] | null, error: any };
+      .select('latitude, longitude, user_id, is_company') as { data: Location[] | null, error: any };
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -22,36 +22,81 @@ export const useMap = () => {
     }
 
     if (locations) {
+      setLastLocations(locations);
+      
+      let filteredLocations = [...locations];
+      if (filter) {
+        filteredLocations = locations.filter(location => {
+          if (location.is_company === true) {
+            return filter.showBusinesses;
+          }
+          return filter.showUsers;
+        });
+      }
+
       const geoJson = {
         type: 'FeatureCollection',
-        features: locations.map(location => ({
+        features: filteredLocations.map(location => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
             coordinates: [location.longitude, location.latitude]
           },
           properties: {
-            user_id: location.user_id
+            user_id: location.user_id,
+            is_company: location.is_company || false
           }
         }))
       };
 
-      // Check if the source already exists before setting data
       const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
       if (source) {
         source.setData(geoJson as any);
       }
       
-      return locations.map(loc => ({ user_id: loc.user_id! }));
+      return locations.map(loc => ({ 
+        user_id: loc.user_id!,
+        is_company: loc.is_company || false 
+      }));
     }
     return [];
   };
+
+  useEffect(() => {
+    if (filter && map.current && lastLocations.length > 0) {
+      const filteredLocations = lastLocations.filter(location => {
+        if (location.is_company === true) {
+          return filter.showBusinesses;
+        }
+        return filter.showUsers;
+      });
+
+      const geoJson = {
+        type: 'FeatureCollection',
+        features: filteredLocations.map(location => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [location.longitude, location.latitude]
+          },
+          properties: {
+            user_id: location.user_id,
+            is_company: location.is_company || false
+          }
+        }))
+      };
+
+      const source = map.current.getSource('locations') as mapboxgl.GeoJSONSource;
+      if (source) {
+        source.setData(geoJson as any);
+      }
+    }
+  }, [filter, lastLocations]);
 
   const centerOnUserLocation = async () => {
     if (!map.current) return;
     
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -63,7 +108,6 @@ export const useMap = () => {
         return;
       }
 
-      // Get user's location from database
       const { data: userLocation, error } = await supabase
         .from('locations')
         .select('latitude, longitude')
@@ -71,7 +115,6 @@ export const useMap = () => {
         .single();
 
       if (error || !userLocation) {
-        // If no stored location, try to get current location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -95,7 +138,6 @@ export const useMap = () => {
         return;
       }
 
-      // If we have a stored location, center the map on it
       map.current.flyTo({
         center: [userLocation.longitude, userLocation.latitude],
         zoom: 15,

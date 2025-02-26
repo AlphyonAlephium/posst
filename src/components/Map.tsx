@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
@@ -7,22 +7,17 @@ import { SendFileDialog } from './map/SendFileDialog';
 import { NearbyUser } from './map/types';
 import { useMap } from './map/hooks/useMap';
 import { setupMapLayers } from './map/MapLayers';
-import { useLocation } from '@/hooks/useLocation';
-import { Button } from './ui/button';
-import { MapPin } from 'lucide-react';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { map, initializeMap, updateLocationSource, showUserLocation } = useMap();
-  const { setLocation } = useLocation();
+  const { map, initializeMap, updateLocationSource } = useMap();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showLocationButton, setShowLocationButton] = useState(true);
 
   const handleMarkerClick = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -143,17 +138,6 @@ export const Map = () => {
     }
   };
 
-  const handleShowMyLocation = () => {
-    showUserLocation();
-    setLocation();
-    setShowLocationButton(false);
-    
-    // Show the button again after 10 seconds
-    setTimeout(() => {
-      setShowLocationButton(true);
-    }, 10000);
-  };
-
   React.useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -249,19 +233,6 @@ export const Map = () => {
     <>
       <div className="relative w-full h-[300px] rounded-lg overflow-hidden">
         <div ref={mapContainer} className="absolute inset-0" />
-        
-        {showLocationButton && (
-          <div className="absolute bottom-4 right-4 z-10">
-            <Button 
-              onClick={handleShowMyLocation} 
-              size="sm" 
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg"
-            >
-              <MapPin className="h-4 w-4 mr-1" />
-              My Location
-            </Button>
-          </div>
-        )}
       </div>
 
       <SendFileDialog

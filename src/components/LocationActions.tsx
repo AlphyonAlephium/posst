@@ -1,33 +1,27 @@
 
 import { Button } from "@/components/ui/button";
-import { MapPin, Trash2 } from "lucide-react";
+import { MapPin, Trash2, Plus } from "lucide-react";
 import { useLocation } from "@/hooks/useLocation";
 
 export const LocationActions = () => {
   const { setLocation, deleteLocation } = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bottom-nav">
-      <div className="max-w-md mx-auto px-4 py-3 flex justify-center gap-2">
-        <Button 
-          className="gradient-button text-white font-semibold w-full"
-          size="lg"
-          onClick={setLocation}
-        >
-          <MapPin className="mr-2 h-5 w-5" />
-          Set Location
-        </Button>
+    <div className="fixed bottom-4 right-4 flex flex-col gap-3 z-50">
+      <Button 
+        className="instagram-button h-14 w-14 rounded-full shadow-lg flex items-center justify-center"
+        onClick={setLocation}
+      >
+        <MapPin className="h-6 w-6" />
+      </Button>
 
-        <Button 
-          variant="destructive"
-          size="lg"
-          onClick={deleteLocation}
-          className="w-full"
-        >
-          <Trash2 className="mr-2 h-5 w-5" />
-          Delete Location
-        </Button>
-      </div>
+      <Button 
+        variant="outline"
+        className="h-14 w-14 rounded-full shadow-lg flex items-center justify-center border-gray-200 bg-white"
+        onClick={deleteLocation}
+      >
+        <Trash2 className="h-6 w-6 text-red-500" />
+      </Button>
     </div>
   );
 };

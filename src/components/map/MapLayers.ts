@@ -13,14 +13,19 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
     clusterRadius: 50
   });
 
-  // Add clusters layer
+  // Add clusters layer with Instagram-like styling
   map.addLayer({
     id: 'clusters',
     type: 'circle',
     source: 'locations',
     filter: ['has', 'point_count'],
     paint: {
-      'circle-color': '#FFFFFF',
+      'circle-color': [
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#E1306C', // Instagram pink for clusters with hot deals
+        '#FFFFFF' // White for regular clusters
+      ],
       'circle-radius': [
         'step',
         ['get', 'point_count'],
@@ -28,7 +33,14 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
         10, 30,
         20, 40
       ],
-      'circle-opacity': 0.8
+      'circle-stroke-width': 2,
+      'circle-stroke-color': [
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#C13584', // Instagram gradient darker pink
+        '#EFEFEF' // Light gray stroke
+      ],
+      'circle-opacity': 0.9
     }
   });
 
@@ -44,36 +56,103 @@ export const setupMapLayers = (map: mapboxgl.Map) => {
       'text-size': 12
     },
     paint: {
-      'text-color': '#7ed957'
+      'text-color': [
+        'case',
+        ['to-boolean', ['get', 'has_hot_deal']],
+        '#FFFFFF', // White text for hot deal clusters
+        '#262626'  // Instagram dark gray text for regular clusters
+      ]
     }
   });
 
-  // Add unclustered point layer
+  // Add unclustered point layer with Instagram-style markers
   map.addLayer({
     id: 'unclustered-point',
     type: 'circle',
     source: 'locations',
     filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-color': '#FFFFFF',
-      'circle-radius': 15,
-      'circle-opacity': 0.8
+      'circle-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#E1306C', // Instagram pink for company with hot deals
+          '#FCAF45'  // Instagram orange/gold for regular companies
+        ],
+        '#FFFFFF'    // White for regular users
+      ],
+      'circle-radius': 18,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#C13584',  // Instagram gradient darker pink
+          '#F77737'   // Instagram darker orange
+        ],
+        '#EFEFEF'     // Light gray stroke for regular users
+      ],
+      'circle-opacity': 0.9
     }
   });
 
-  // Add unclustered point count
+  // Pulsing effect for hot deals
+  map.addLayer({
+    id: 'hot-deal-pulse',
+    type: 'circle',
+    source: 'locations',
+    filter: [
+      'all',
+      ['!', ['has', 'point_count']],
+      ['to-boolean', ['get', 'has_hot_deal']]
+    ],
+    paint: {
+      'circle-radius': 24,
+      'circle-color': '#E1306C',
+      'circle-opacity': [
+        'interpolate',
+        ['linear'],
+        ['%', ['*', ['time'], 0.001], 1.0],
+        0, 0.3,
+        0.5, 0.15,
+        1, 0.3
+      ],
+      'circle-stroke-width': 0
+    }
+  });
+
+  // Add unclustered point count/icon
   map.addLayer({
     id: 'unclustered-point-count',
     type: 'symbol',
     source: 'locations',
     filter: ['!', ['has', 'point_count']],
     layout: {
-      'text-field': '1',
+      'text-field': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        'C',
+        '1'
+      ],
       'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
       'text-size': 12
     },
     paint: {
-      'text-color': '#7ed957'
+      'text-color': [
+        'case',
+        ['==', ['get', 'is_company'], true],
+        [
+          'case',
+          ['to-boolean', ['get', 'has_hot_deal']],
+          '#FFFFFF', // White text for hot deal companies
+          '#FFFFFF'  // White text for regular companies
+        ],
+        '#262626'    // Instagram dark gray for regular users
+      ]
     }
   });
 };

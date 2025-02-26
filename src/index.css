@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
@@ -12,20 +13,20 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 32 100% 50%;
+    --primary: 346 100% 58%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 32 100% 96%;
+    --secondary: 346 100% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 32 100% 96%;
+    --muted: 346 100% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 32 100% 96%;
+    --accent: 346 100% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 32 100% 50%;
-    --radius: 0.75rem;
+    --ring: 346 100% 58%;
+    --radius: 0.5rem;
   }
 }
 
@@ -38,9 +39,24 @@
   }
 }
 
-.glass-card {
-  @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg;
-  background: linear-gradient(109.6deg, rgba(255, 255, 255, 0.9) 11.2%, rgba(255, 255, 255, 0.7) 91.1%);
+.instagram-card {
+  @apply bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden;
+}
+
+.instagram-gradient {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+
+.instagram-button {
+  @apply bg-primary text-white font-semibold rounded-lg transition-all;
+}
+
+.instagram-button:hover {
+  @apply opacity-90;
+}
+
+.instagram-input {
+  @apply bg-gray-50 border border-gray-200 rounded-lg text-sm px-3 py-2 w-full focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all;
 }
 
 .slide-up {
@@ -72,17 +88,44 @@
 }
 
 .bottom-nav {
-  background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 -1px 10px rgba(0,0,0,0.1);
+  background: white;
+  box-shadow: 0 -1px 10px rgba(0,0,0,0.05);
+  @apply border-t border-gray-100;
 }
 
-.gradient-button {
-  background: linear-gradient(90deg, #ff9500 0%, #ff7900 100%);
-  transition: all 0.3s ease;
+/* Instagram-like pulsing animation for hot deals */
+.pulse-hot-deal {
+  animation: pulseHotDeal 1.5s infinite;
 }
 
-.gradient-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+@keyframes pulseHotDeal {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 39, 67, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 39, 67, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 39, 67, 0);
+  }
+}
+
+/* Map marker animation */
+.map-marker-pulse {
+  animation: mapMarkerPulse 2s infinite;
+}
+
+@keyframes mapMarkerPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

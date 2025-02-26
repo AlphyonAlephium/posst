@@ -1,5 +1,5 @@
 
-import { LogOut } from "lucide-react";
+import { LogOut, Search, Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,17 +23,30 @@ export const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-background/80 backdrop-blur-lg border-b z-50">
-      <div className="w-10" /> {/* Spacer for centering */}
+    <header className="fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 bg-white border-b border-gray-200 z-50">
+      <div className="flex-1 flex justify-start">
+        <Button variant="ghost" size="icon" className="text-gray-800">
+          <Search className="h-5 w-5" />
+        </Button>
+      </div>
       
-      <div className="flex items-center gap-4">
-        <img src="/lovable-uploads/25d6ab78-31af-482a-a80c-f87edbe32e96.png" alt="Posst Logo" className="h-8" />
+      <div className="flex-1 flex justify-center">
+        <img src="/lovable-uploads/25d6ab78-31af-482a-a80c-f87edbe32e96.png" alt="Posst Logo" className="h-7" />
       </div>
 
-      <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
-        <LogOut className="h-6 w-6" />
-      </Button>
+      <div className="flex-1 flex justify-end items-center gap-1">
+        <Button variant="ghost" size="icon" className="text-gray-800">
+          <Heart className="h-5 w-5" />
+        </Button>
+        
+        <Button variant="ghost" size="icon" className="text-gray-800">
+          <MessageCircle className="h-5 w-5" />
+        </Button>
+        
+        <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out" className="text-gray-800">
+          <LogOut className="h-5 w-5" />
+        </Button>
+      </div>
     </header>
   );
 };
-

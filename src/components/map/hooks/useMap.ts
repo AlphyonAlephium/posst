@@ -3,9 +3,11 @@ import { useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { supabase } from '@/integrations/supabase/client';
 import { Location, LATVIA_CENTER } from '../types';
+import { useToast } from '@/components/ui/use-toast';
 
 export const useMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
+  const toast = useToast();
 
   const updateLocationSource = async () => {
     if (!map.current) return;
@@ -45,6 +47,71 @@ export const useMap = () => {
     return [];
   };
 
+  const centerOnUserLocation = async () => {
+    if (!map.current) return;
+    
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to use this feature"
+        });
+        return;
+      }
+
+      // Get user's location from database
+      const { data: userLocation, error } = await supabase
+        .from('locations')
+        .select('latitude, longitude')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !userLocation) {
+        // If no stored location, try to get current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              map.current?.flyTo({
+                center: [longitude, latitude],
+                zoom: 15,
+                speed: 1.5
+              });
+            },
+            (error) => {
+              console.error('Error getting current position:', error);
+              toast.toast({
+                variant: "destructive",
+                title: "Location Error",
+                description: "Could not access your location. Please check browser permissions."
+              });
+            }
+          );
+        }
+        return;
+      }
+
+      // If we have a stored location, center the map on it
+      map.current.flyTo({
+        center: [userLocation.longitude, userLocation.latitude],
+        zoom: 15,
+        speed: 1.5
+      });
+      
+    } catch (error) {
+      console.error('Error centering on user location:', error);
+      toast.toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to center map on your location"
+      });
+    }
+  };
+
   const initializeMap = async (containerRef: HTMLDivElement) => {
     try {
       const { data: { MAPBOX_PUBLIC_TOKEN }, error } = await supabase
@@ -77,6 +144,7 @@ export const useMap = () => {
   return {
     map,
     initializeMap,
-    updateLocationSource
+    updateLocationSource,
+    centerOnUserLocation
   };
 };

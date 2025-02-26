@@ -7,11 +7,13 @@ import { SendFileDialog } from './map/SendFileDialog';
 import { NearbyUser } from './map/types';
 import { useMap } from './map/hooks/useMap';
 import { setupMapLayers } from './map/MapLayers';
+import { Button } from './ui/button';
+import { Navigation } from 'lucide-react';
 
 export const Map = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { map, initializeMap, updateLocationSource } = useMap();
+  const { map, initializeMap, updateLocationSource, centerOnUserLocation } = useMap();
 
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -138,6 +140,10 @@ export const Map = () => {
     }
   };
 
+  const handleCenterOnUserLocation = () => {
+    centerOnUserLocation();
+  };
+
   React.useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -233,6 +239,16 @@ export const Map = () => {
     <>
       <div className="relative w-full h-[300px] rounded-lg overflow-hidden">
         <div ref={mapContainer} className="absolute inset-0" />
+        <div className="absolute top-2 right-2 z-10">
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            onClick={handleCenterOnUserLocation}
+            className="bg-white hover:bg-gray-100 shadow-md"
+          >
+            <Navigation className="h-5 w-5 text-gray-700" />
+          </Button>
+        </div>
       </div>
 
       <SendFileDialog
